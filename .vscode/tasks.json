@@ -1,0 +1,47 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Configure",
+      "type": "shell",
+      "command": "meson build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Configure + Wipe",
+      "type": "shell",
+      "command": "meson build --wipe",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "ninja -C build",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Run",
+      "type": "shell",
+      "command": "./build/src/webkit2gtk-greeter",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run in development mode",
+      "type": "shell",
+      "command": "./build/src/webkit2gtk-greeter --dev --debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run with gdb",
+      "type": "shell",
+      "command": "gdb --args ./build/src/webkit2gtk-greeter --dev --debug",
+      "problemMatcher": []
+    }
+  ]
+}
