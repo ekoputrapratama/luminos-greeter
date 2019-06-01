@@ -4,15 +4,45 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Configure",
+      "label": "Clean",
       "type": "shell",
-      "command": "meson build",
+      "command": "ninja -C build -t clean",
       "problemMatcher": []
     },
     {
-      "label": "Configure + Wipe",
+      "label": "Configure debug",
       "type": "shell",
-      "command": "meson build --wipe",
+      "command": "meson configure --buildtype=debug build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Configure release",
+      "type": "shell",
+      "command": "meson configure --buildtype=release build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Setup debug",
+      "type": "shell",
+      "command": "env CC=clang CXX=clang++ meson setup --buildtype=debug build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Setup release",
+      "type": "shell",
+      "command": "meson setup --buildtype=release build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Setup debug + Wipe",
+      "type": "shell",
+      "command": "meson setup build --buildtype=debug --wipe",
+      "problemMatcher": []
+    },
+    {
+      "label": "Setup release + Wipe",
+      "type": "shell",
+      "command": "meson setup build --buildtype=release --wipe",
       "problemMatcher": []
     },
     {
@@ -20,27 +50,30 @@
       "type": "shell",
       "command": "ninja -C build",
       "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
+      "group": { "kind": "build", "isDefault": true }
     },
     {
-      "label": "Run",
+      "label": "Run Test",
       "type": "shell",
-      "command": "./build/src/webkit2gtk-greeter",
+      "command": "meson test -C build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run release",
+      "type": "shell",
+      "command": "./build/greeter/webkit2gtk-greeter",
       "problemMatcher": []
     },
     {
       "label": "Run in development mode",
       "type": "shell",
-      "command": "./build/src/webkit2gtk-greeter --dev --debug",
+      "command": "./build/greeter/webkit2gtk-greeter --dev --debug",
       "problemMatcher": []
     },
     {
       "label": "Run with gdb",
       "type": "shell",
-      "command": "gdb --args ./build/src/webkit2gtk-greeter --dev --debug",
+      "command": "gdb --args ./build/greeter/webkit2gtk-greeter --dev --debug",
       "problemMatcher": []
     }
   ]
