@@ -67,7 +67,7 @@
     {
       "label": "Run in development mode",
       "type": "shell",
-      "command": "./build/greeter/webkit2gtk-greeter --dev --debug",
+      "command": "G_MESSAGES_DEBUG=all ./build/greeter/webkit2gtk-greeter --dev --debug",
       "problemMatcher": []
     },
     {
