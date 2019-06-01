@@ -25,7 +25,7 @@ namespace Webkit2gtkGreeter {
 			if(options.dev) {
 				var destination = File.new_for_path("data/themes/default/index.html");
 				string path = "file://" + destination.get_path();
-				message("theme path: %s\n", path);
+				debug("theme path: %s\n", path);
 				url = path;
 			}
 

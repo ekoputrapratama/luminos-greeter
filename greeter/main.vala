@@ -16,7 +16,7 @@ namespace Webkit2gtkGreeter {
 			                  N_("Running in development mode"), null };
 		OptionEntry[] options = { versionOption, debugOption, devOption };
 
-		message("Loading command line options");
+		debug("Loading command line options");
 		var c = new OptionContext("- Webkit2gtk Greeter");
 		c.add_main_entries(options, "io.github.webkit2gtk-greeter");
 		c.add_group(Gtk.get_option_group(true));
