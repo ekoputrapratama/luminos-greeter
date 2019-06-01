@@ -1,50 +1,94 @@
 
 
+greeter_c_options = [
+  '-DWNCK_I_KNOW_THIS_IS_UNSTABLE',
+  '-lm',
+  '-DGETTEXT_PACKAGE=\"$(GETTEXT_PACKAGE)\"',
+  '-DLOCALEDIR=\""$(localedir)"\"',
+	'-DVERSION=\"$(VERSION)\"',
+	'-DPKGDATADIR=\""$(pkgdatadir)"\"'
+]
 
-gnome = import('gnome')
+greeter_vala_options = [
+  '--target-glib=@0@'.format(target_glib),
+  '--enable-checking'
+]
 
-conf_data = configuration_data()
-conf_data.set('CONF_DIR', join_paths(get_option('sysconfdir'), 'lightdm'))
-conf_data.set('GETTEXT_PACKAGE', meson.project_name())
 
-conf_data.set('VERSION', meson.project_version())
+
 config_header = configure_file (
     input: 'config.vala.in',
     output: 'config.vala',
     configuration: conf_data
 )
 
-webkit2gtk_greeter_sources = [
-  'widgets/Window.vala',
-  'widgets/WebView.vala',
-  'constants/WindowType.vala',
-  'main.vala',
-  config_header
-]
-
-webkit2gtk_greeter_sources += gnome.compile_resources('webkit2gtk-greeter-resources',
+greeter_resources = gnome.compile_resources('webkit2gtk-greeter-resources',
   'webkit2gtk-greeter.gresource.xml'
 )
-webkit2gtk_greeter_deps = [
-  dependency('gdk-3.0', version: '>= 3.22'),
-  dependency('gtk+-3.0', version: '>= 3.22'),
-  dependency('libsoup-2.4'),
-  dependency('libwnck-3.0'),
-  dependency('webkit2gtk-4.0'),
-  dependency('javascriptcoregtk-4.0'),
-  dependency('gee-0.8'),
-  dependency('gdk-pixbuf-2.0'),
-  dependency('json-glib-1.0'),
-  dependency('glib-2.0'),
-  dependency('gobject-2.0'),
-  dependency('liblightdm-gobject-1')
+
+greeter_client_vala_sources = files(
+  'widgets/Window.vala',
+  'widgets/WebContainer.vala',
+  'GreeterApplication.vala', 
+)
+
+greeter_client_sources = [
+  greeter_client_vala_sources,
+  greeter_resources
 ]
 
+greeter_client_dependencies = [
+  gdk,
+  gtk,
+  libsoup,
+  dependency('libwnck-3.0'),
+  webkit2gtk,
+  javascriptcoregtk,
+  gee,
+  dependency('gdk-pixbuf-2.0'),
+  json_glib,
+  glib,
+  gobject,
+  lightdm,
+  posix,
+]
+greeter_client_vala_options = greeter_vala_options
 
+greeter_client_lib = static_library(
+  'greeter-client',
+  greeter_client_sources,
+  dependencies: greeter_client_dependencies,
+  vala_args: greeter_client_vala_options,
+  c_args: greeter_c_options,
+  include_directories: config_h_dir
+)
 
-executable(meson.project_name(), webkit2gtk_greeter_sources,
-  vala_args: ['--target-glib=2.2.5 --rdynamic'],
-  dependencies: webkit2gtk_greeter_deps,
+greeter_client_dep = declare_dependency(
+  link_with: greeter_client_lib,
+  include_directories: include_directories('.')
+)
+
+# make the executable
+greeter_bin_sources = files(
+  'main.vala'
+)
+greeter_bin_sources += [
+  greeter_resources,
+  config_header
+]
+greeter_bin_dependencies = [
+  posix,
+  gdk,
+  greeter_client_dep,
+  gtk,
+  libsoup,
+  gee,
+  webkit2gtk,
+]
+greeter_bin = executable(meson.project_name(), greeter_bin_sources,
+  vala_args: greeter_vala_options,
+  dependencies: greeter_bin_dependencies,
   install: true,
+  c_args: greeter_c_options,
   install_dir: '/opt/webkit2gtk-greeter'
 )
