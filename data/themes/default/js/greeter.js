@@ -24,9 +24,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-// lightdm.restart();
-
-var cfg = new ConfigManager();
 
 var DEBUG = true,
   selectedUser = null,
@@ -78,10 +75,12 @@ $(document).ready(function() {
       var tux = "img/icons/user.png";
       var imageSrc = user.image ? user.image : tux;
       var lastSession = localStorage.getItem(user.name);
-      if (lastSession == null && lastSession == undefined) {
+
+      if (lastSession === null || lastSession === undefined) {
         localStorage.setItem(user.name, lightdm.default_session);
         lastSession = localStorage.getItem(user.name);
       }
+
       log("Last Session (" + user.name + "): " + lastSession);
       var item =
         '<li class="account">' +
@@ -156,7 +155,7 @@ $(document).ready(function() {
             <a href="#" data-img="${
               background.image
             }" class="background clearfix">
-              <img src="${background.thumb}" /> 
+              <img src="${background.thumb}" />
             </a>
           `);
     });
@@ -501,6 +500,7 @@ $(document).ready(function() {
       localStorage.setItem("selUser", null);
       log("authentication cancelled for " + selectedUser);
     }
+
     localStorage.setItem("selUser", username);
 
     var usrSession = localStorage.getItem(username);
@@ -576,7 +576,7 @@ function show_prompt(text) {
 }
 
 function authentication_complete() {
-  log("authentication_complete()");
+  console.log("authentication_complete()");
   authPending = false;
   // $('#timerArea').hide();
   var selSession = $(".selected").attr("data-session-id");
