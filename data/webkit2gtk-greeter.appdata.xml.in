@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-	<id>webkit2gtk-boilerplate.desktop</id>
+	<id>webkit2gtk-greeter.desktop</id>
+  <url type="homepage">https://webkit2gtk-greeter.web.app</url>
 	<licence>CC0</licence>
-  <name>Webkit2gtk Boilerplate</name>
-	<description>
-	</description>
+  <name>Webkit2gtk Greeter</name>
+	<description></description>
+  <summary>LightDM Webkit2gtk</summary>
   <keywords>
     <keyword>WebView</keyword>
     <keyword>launch</keyword>
@@ -12,6 +13,8 @@
     <keyword>start</keyword>
   </keywords>
   <provides>
-    <binary>webkit2gtk-boilerplate</binary>
+    <binary>webkit2gtk-greeter</binary>
   </provides>
+  <translation></translation>
+  <update_contact></update_contact>
 </component>

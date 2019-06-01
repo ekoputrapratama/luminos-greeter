@@ -1,5 +1,5 @@
 <schemalist>
-	<enum id="PlankHideType">
+	<enum id="HideType">
 		<value nick="none" value="0"/>
 		<value nick="intelligent" value="1"/>
 		<value nick="auto" value="2"/>
