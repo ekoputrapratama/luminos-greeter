@@ -1,5 +1,6 @@
 using Gee;
 using GLib;
+using WebKit;
 
 namespace Webkit2gtkGreeter {
 
@@ -8,24 +9,20 @@ namespace Webkit2gtkGreeter {
 		public signal void on_string_callback();
 	}
 
-	public class WebView : WebKit.WebView {
+	public class WebContainer: WebView {
 		private JSApi messenger = null;
 		private int count = 0;
 		public File launchers_folder { get; private set; }
 		public File config_folder { get; construct; }
-		public WebKit.WebContext context {get; set;}
+		public WebContext context {get; set;}
 		public signal void on_string_callback();
 
-		public WebView.with_context(WebKit.WebContext ctx) {
+		public WebContainer.with_context(WebContext ctx) {
 			GLib.Object(context: ctx);
 			this.init();
 		}
-		public WebView() {
+		public WebContainer() {
 			this.init();
-		}
-		~WebView() {
-			Bus.watch_name(BusType.SESSION, "io.github.webkit2gtk-greeter.JSApi", BusNameWatcherFlags.NONE,
-			               (connection, name, owner) => { on_extension_appeared(connection, name, owner); }, null);
 		}
 		construct
 		{
@@ -40,6 +37,8 @@ namespace Webkit2gtkGreeter {
 			settings.allow_universal_access_from_file_urls = true;
 			settings.enable_developer_extras = true;
 			settings.enable_webgl = true;
+			Bus.watch_name(BusType.SESSION, "io.github.webkit2gtk-greeter.JSApi", BusNameWatcherFlags.NONE,
+			               (connection, name, owner) => { on_extension_appeared(connection, name, owner); }, null);
 		}
 		private void on_extension_appeared(DBusConnection connection, string name, string owner) {
 			try {
