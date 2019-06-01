@@ -340,16 +340,7 @@ namespace Webkit2gtkGreeter.JSUtils {
 			return new Variant.boolean(val.to_boolean(ctx));
 		}
 
-		unowned JS.Object glob_object = ctx.get_global_object();
-		unowned JS.Object object = o_get_object(ctx, glob_object, "Array");
-		object = o_get_object(ctx, object, "isArray");
-		void*[] params = new void*[1];
-		params[0] = (void*) val;
-		JS.Value ? exception;
-		unowned JS.Value result = object.call_as_function(ctx, glob_object, (JS.Value[]) params, out exception);
-		if(exception != null) {
-			throw new JSApiError.WRONG_TYPE("Unsupported type. %s", exception_to_string(ctx, exception) ?? "(null)");
-		}
+		unowned JS.Object object;
 
 		if(is_js_array(ctx, val)) {
 			VariantBuilder builder = new VariantBuilder(new VariantType("av"));
@@ -369,7 +360,7 @@ namespace Webkit2gtkGreeter.JSUtils {
 			var builder = new VariantBuilder(new VariantType("a{smv}"));
 			for(size_t i = 0; i < size; i++) {
 				unowned JS.String js_property = properties.get(i);
-				Variant ? value = variant_from_value(ctx, object.get_property(ctx, js_property));
+				Variant? value = variant_from_value(ctx, object.get_property(ctx, js_property));
 				builder.add("{smv}", utf8_string(js_property), value);
 			}
 
@@ -378,10 +369,94 @@ namespace Webkit2gtkGreeter.JSUtils {
 		warning("Attempt to convert `undefined` JavaScript type. This might be a programmer error!");
 		return new Variant.string("<ERROR: UNDEFINED VALUE TYPE>");
 	}
-	public bool is_js_array(JS.Context ctx, unowned JS.Value value) {
-		//  unowned JS.Value value = args[0];
+	public static bool is_null_or_undefined(JS.Context ctx, unowned JS.Value value) {
+		return value.is_null(ctx) || value.is_undefined(ctx);
+	}
+	public string array_string_to_string(string[] array) {
+		string result = "[";
+		for(int i = 0; i < array.length; i++) {
+			if(i == (array.length - 1)) {
+				result += array[i] + "]";
+			} else {
+				result += array[i] + ",";
+			}
+		}
+		if(array.length < 1) {
+			result += "]";
+		}
+		return result;
+	}
+	public unowned JS.Object remove_property(JS.Context ctx, JS.Object obj, string key) {
+		message("remove_property called to remove property %s", key);
+		unowned JS.Object newObj = ctx.make_object();
+		string[] propertyNames = get_property_names(ctx, obj);
+		message("propertyNames : %s", array_string_to_string(propertyNames));
+		for(var i = 0; i < propertyNames.length; i++) {
+			string name = propertyNames[i];
+			if(name != key) {
+				unowned JS.Value val = obj.get_property(ctx, new JS.String(name));
+				if(!is_null_or_undefined(ctx, val)) {
+					newObj.set_property(ctx, new JS.String(name), val);
+				}
+			}
+		}
+		string[] newPropertyNames = get_property_names(ctx, newObj);
+		message("new propertyNames : %s", array_string_to_string(newPropertyNames));
+		return newObj;
+	}
+	public static unowned JS.Value get_js_property_names(JS.Context ctx, unowned JS.Value value) {
 		if(value.is_object(ctx)) {
-			JS.Value ? exception;
+			JS.Value? exception;
+			JS.String name = new JS.String.with_utf8_c_string("Object");
+			unowned JS.Object global_obj = ctx.get_global_object();
+			unowned JS.Object obj = global_obj.get_property(ctx, name).to_object(ctx);
+
+			name = new JS.String.with_utf8_c_string("getOwnPropertyNames");
+			unowned JS.Object getOwnPropertyNames = obj.get_property(ctx, name).to_object(ctx);
+
+			// create new arguments to be used when calling getOwnPropertyNames function
+			void*[] params = new void*[1];
+			params[0] = (void*) value;
+			message("calling getOwnPropertyNames");
+			unowned JS.Value retval = getOwnPropertyNames.call_as_function(ctx, obj, (JS.Value[]) params, out exception);
+			if(!retval.is_undefined(ctx) && !retval.is_null(ctx)) {
+				message("returning value : %s", is_js_array(ctx, retval).to_string());
+				return retval;
+			}
+
+		}
+		return JS.Value.undefined(ctx);
+	}
+
+	public static string[] get_property_names(JS.Context ctx, unowned JS.Value value) {
+		if(value.is_object(ctx)) {
+			JS.Value? exception;
+			JS.String name = new JS.String.with_utf8_c_string("Object");
+			unowned JS.Object global_obj = ctx.get_global_object();
+			unowned JS.Object obj = global_obj.get_property(ctx, name).to_object(ctx);
+
+			name = new JS.String.with_utf8_c_string("getOwnPropertyNames");
+			unowned JS.Object getOwnPropertyNames = obj.get_property(ctx, name).to_object(ctx);
+
+			// create new arguments to be used when calling getOwnPropertyNames function
+			void*[] params = new void*[1];
+			params[0] = (void*) value;
+
+			unowned JS.Object retval = (JS.Object)getOwnPropertyNames.call_as_function(ctx, obj, (JS.Value[]) params, out exception);
+			int size = (int) o_get_number(ctx, retval, "length");
+			string[] results = new string[size];
+
+			for(uint i = 0; i < size; i++) {
+				results[i] = value_to_string(ctx, retval.get_property_at_index(ctx, i));
+			}
+			return results;
+		}
+		return null;
+	}
+
+	public static bool is_js_array(JS.Context ctx, unowned JS.Value value) {
+		if(value.is_object(ctx)) {
+			JS.Value? exception;
 			JS.String name = new JS.String.with_utf8_c_string("Array");
 			unowned JS.Object global_obj = ctx.get_global_object();
 			unowned JS.Object array = global_obj.get_property(ctx, name).to_object(ctx);
@@ -401,6 +476,15 @@ namespace Webkit2gtkGreeter.JSUtils {
 		}
 		return false;
 	}
+	public static unowned JS.Value to_js_string(JS.Context ctx, string val) {
+		return JS.Value.string(ctx, new JS.String(val));
+	}
+
+	public static bool has_property(JS.Context ctx, unowned JS.Object? obj, string name) {
+		unowned JS.Value val = obj.get_property(ctx, new JS.String(name));
+		return !val.is_null(ctx) && !val.is_undefined(ctx);
+	}
+
 	[DBus(name = "io.github.webkit2gtk-greeter.JSApi")]
 	public errordomain JSApiError {
 		ERROR,

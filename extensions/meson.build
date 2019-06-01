@@ -1,31 +1,45 @@
-extensions_sources = [
+
+#Core extension
+core_sources = [
+  config_header,
   'core/jsapi.vala',
   'jsutils.vala',
+  'core/DesktopFileReader.vala',
   
 ]
-config_manager_sources = [
-  'config-manager/ClientConfigManager.vala',
-  'config-manager/ConfigManager.vala',
-  'jsutils.vala'
-]
-extensions_deps = [
-  dependency('webkit2gtk-web-extension-4.0'),
-  dependency('javascriptcoregtk-4.0'),
-  dependency('json-glib-1.0'),
-  dependency('gobject-2.0'),
-  dependency('liblightdm-gobject-1'),
-  dependency('gee-0.8')
+
+core_deps = [
+  webkit2gtk_web_extension,
+  javascriptcoregtk,
+  json_glib,
+  gobject,
+  lightdm,
+  gee,
 ]
 
-shared_library('webkit2gtk-greeter-core', extensions_sources,
+core_extension = library('webkit2gtk-greeter-core', core_sources,
   vala_args: ['--vapi=webkit2gtk-greeter.vapi'],
-  dependencies: extensions_deps,
+  dependencies: core_deps,
   install: true,
   install_dir: '/opt/webkit2gtk-greeter/extensions'
 )
-shared_library('webkit2gtk-greeter-config-manager', config_manager_sources,
+
+#Config Manager extension
+config_manager_sources = [
+  'config-manager/ClientConfigManager.vala',
+  'config-manager/ConfigManager.vala',
+  'jsutils.vala',
+  config_header
+]
+config_manager_dependencies = [
+  webkit2gtk_web_extension,
+  javascriptcoregtk,
+  json_glib,
+  gee,
+]
+config_manager_extension = library('webkit2gtk-greeter-config-manager', config_manager_sources,
   vala_args: ['--vapi=webkit2gtk-greeter.vapi'],
-  dependencies: extensions_deps,
+  dependencies: config_manager_dependencies,
   install: true,
   install_dir: ['/opt/webkit2gtk-greeter/extensions',true,true]
 )

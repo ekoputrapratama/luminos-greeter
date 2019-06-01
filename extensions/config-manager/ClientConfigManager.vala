@@ -3,14 +3,30 @@ using JS;
 using GLib;
 using Gtk;
 using Webkit2gtkGreeter.JSUtils;
+
+[CCode(cname = "G_MODULE_EXPORT webkit_web_extension_initialize", instance_pos = -1)]
+public void webkit_web_extension_initialize(WebKit.WebExtension extension) {
+	message("config-manager extension initilalization");
+	Webkit2gtkGreeter.ClientConfigManager instance = new Webkit2gtkGreeter.ClientConfigManager();
+
+	extension.page_created.connect(instance.on_page_created);
+	var scriptWorld = WebKit.ScriptWorld.get_default();
+	scriptWorld.window_object_cleared.connect(instance.on_window_object_cleared);
+	//  Bus.own_name(BusType.SESSION, "io.github.webkit2gtk-greeter.ClientConfigManager", BusNameOwnerFlags.NONE,
+	//               client.on_bus_aquired, null, () => { warning("Could not aquire name"); });
+
+	// Ref it so it doesn't get free'ed right away
+	instance.ref();
+}
+
 namespace Webkit2gtkGreeter {
-	ClientConfigManager client = null;
+
 	//  [DBus(name = "io.github.webkit2gtk-greeter.config-manager")]
 	class ClientConfigManager : GLib.Object {
 		private WebKit.WebPage page;
 		private ConfigManager config_mgr;
 		public ClientConfigManager() {
-			config_mgr = new ConfigManager();
+
 		}
 
 		//  [DBus(visible = false)]
@@ -28,10 +44,12 @@ namespace Webkit2gtkGreeter {
 
 		//  [DBus(visible = false)]
 		public void on_window_object_cleared(ScriptWorld world, WebPage page, WebKit.Frame frame) {
-			message("window object cleared");
+			debug("window object cleared");
 			unowned JS.Context context = (JS.GlobalContext)frame.get_javascript_context_for_script_world(world);
-			unowned JS.Object class_obj = config_mgr.make_class(context);
+			config_mgr = new ConfigManager.with_js_context(context);
+			unowned JS.Object class_obj = config_mgr.make_class();
 			unowned JS.Object global = context.get_global_object();
+
 			global.set_property(context,
 			                    new JS.String.with_utf8_c_string("ConfigManager"),
 			                    class_obj,
@@ -41,14 +59,5 @@ namespace Webkit2gtkGreeter {
 		//      return new ConfigManager();
 		//  }
 	}
-	[CCode(cname = "G_MODULE_EXPORT webkit_web_extension_initialize", instance_pos = -1)]
-	void webkit_web_extension_initialize(WebKit.WebExtension extension) {
-		message("config-manager extension initilalization");
-		Webkit2gtkGreeter.client = new ClientConfigManager();
-		extension.page_created.connect(client.on_page_created);
-		var scriptWorld = WebKit.ScriptWorld.get_default();
-		scriptWorld.window_object_cleared.connect(client.on_window_object_cleared);
-		//  Bus.own_name(BusType.SESSION, "io.github.webkit2gtk-greeter.ClientConfigManager", BusNameOwnerFlags.NONE,
-		//               client.on_bus_aquired, null, () => { warning("Could not aquire name"); });
-	}
+
 }

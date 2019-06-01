@@ -7,22 +7,19 @@ namespace Webkit2gtkGreeter {
 	[GtkTemplate(ui = "/io/github/webkit2gtk-greeter/ui/window.ui")]
 	class Window : Gtk.Window {
 
-		Webkit2gtkGreeter.WebView webview;
+		Webkit2gtkGreeter.WebContainer webview;
 		bool enable_transparancy = false;
-		string debug;
 		private int count = 0;
-		private WindowType type;
 
 		construct
 		{
 			type_hint = Gdk.WindowTypeHint.DESKTOP;
-			debug = get_variable("WEBKIT2GTK_BOILERPLATE_DEBUG");
 		}
 
-		public Window(bool dev) {
+		public Window(unowned AppOptions opts) {
 			string ext_path = "/opt/webkit2gtk-greeter/extensions";
 
-			if(dev) {
+			if(opts.dev) {
 				var destination = File.new_for_path("build/extensions");
 				ext_path = destination.get_path();
 				message("extensions directory: %s\n", ext_path);
@@ -42,7 +39,7 @@ namespace Webkit2gtkGreeter {
 			context.set_process_model(WebKit.ProcessModel.MULTIPLE_SECONDARY_PROCESSES);
 			context.set_tls_errors_policy(WebKit.TLSErrorsPolicy.IGNORE);
 
-			this.webview = new Webkit2gtkGreeter.WebView.with_context(context);
+			this.webview = new Webkit2gtkGreeter.WebContainer.with_context(context);
 
 			UserContentManager contman = this.webview.user_content_manager;
 			this.webview.load_changed.connect(load_changed);
@@ -52,37 +49,15 @@ namespace Webkit2gtkGreeter {
 				message("on_string_callback called");
 			});
 
-			show_all();
 			var screen = this.get_screen();
 			var monitors = this.get_monitor_plug_names(this.get_screen());
 			this.focus_out_event.connect(on_window_focus_out);
+
+			show_all();
 		}
 
-		public void set_type(WindowType type) {
-			switch(type) {
-			default:
-			case WindowType.NORMAL:
-				type_hint = Gdk.WindowTypeHint.NORMAL;
-				break;
-			case WindowType.DESKTOP:
-				type_hint = Gdk.WindowTypeHint.DESKTOP;
-				break;
-			case WindowType.TOOLBAR:
-				type_hint = Gdk.WindowTypeHint.TOOLBAR;
-				break;
-			case WindowType.SPLASHSCREEN:
-				type_hint = Gdk.WindowTypeHint.SPLASHSCREEN;
-				break;
-			case WindowType.DIALOG:
-				type_hint = Gdk.WindowTypeHint.DIALOG;
-				break;
-			case WindowType.DOCK:
-				type_hint = Gdk.WindowTypeHint.NORMAL;
-				break;
-			case WindowType.MENU:
-				type_hint = Gdk.WindowTypeHint.MENU;
-				break;
-			}
+		public void set_type(Gdk.WindowTypeHint type) {
+			type_hint = type;
 		}
 
 		public void set_enable_transparancy() {

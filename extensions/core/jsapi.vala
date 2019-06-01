@@ -4,24 +4,32 @@ using GLib;
 using Gtk;
 using Webkit2gtkGreeter.JSUtils;
 using LightDM;
+using Gee;
 
 namespace Webkit2gtkGreeter {
 	JSApi jsapi = null;
 	private LightDM.Greeter lightdm_greeter;
 	private unowned LightDM.UserList lightdm_user_list;
+	public bool test_mode = false;
+	private unowned JS.Object? lightdm_obj;
 
-	[DBus(name = "io.github.webkit2gtk-greeter.JSApi")]
 	public class JSApi : GLib.Object {
-		private int count = 0;
-		private WebKit.WebPage page;
-		private unowned JS.Object lightdm_obj = null;
 		public signal void on_string_callback();
+		private DesktopFileReader desktop_reader;
+		private unowned JS.Context? context = null;
 
 		construct {
+
+		}
+		public JSApi() {
 			lightdm_greeter = new LightDM.Greeter();
+			lightdm_user_list = LightDM.UserList.get_instance();
+			desktop_reader = new DesktopFileReader();
+
 			lightdm_greeter.show_message.connect(show_message);
 			lightdm_greeter.show_prompt.connect(show_prompt);
-			//  lightdm_greeter.authentication_complete.connect (authentication_complete);
+
+			lightdm_greeter.authentication_complete.connect(authentication_complete);
 
 			lightdm_greeter.notify["has-guest-account-hint"].connect(() => {
 				//  if (lightdm_greeter.has_guest_account_hint && guest_login_button.parent == null) {
@@ -36,29 +44,54 @@ namespace Webkit2gtkGreeter {
 				//      manual_login_button.show ();
 				//  }
 			});
+			var connected = false;
+			try {
+				connected = lightdm_greeter.connect_to_daemon_sync();
+			} catch(Error e) {
+				warning("Failed to connect to LightDM daemon: %s", e.message);
+			}
+
+			if(!connected && !test_mode)
+				Posix.exit(Posix.EXIT_FAILURE);
 		}
-		[DBus(visible = false)]
+
 		private void authentication_complete() {
-			if(lightdm_greeter.is_authenticated) {
-				//  var action_group = get_action_group("session");
-				try {
-					//  lightdm_greeter.start_session_sync(action_group.get_action_state("select").get_string());
-				} catch(Error e) {
-					error(e.message);
+			debug("authentication_complete");
+			unowned JS.Object global = this.context.get_global_object();
+			unowned JS.Value lighdm_val = global.get_property(context, new JS.String("lightdm"));
+			unowned JS.Object obj = lighdm_val.to_object(context, null);
+
+			obj.set_property(context,
+			                 new JS.String.with_utf8_c_string("authentication_user"),
+			                 to_js_string(context, lightdm_greeter.authentication_user),
+			                 JS.PropertyAttribute.None);
+			obj.set_property(context,
+			                 new JS.String.with_utf8_c_string("is_authenticated"),
+			                 JS.Value.boolean(context, lightdm_greeter.is_authenticated),
+			                 JS.PropertyAttribute.None);
+
+
+			unowned JS.Value val = obj.get_property(context, new JS.String("onAuthenticationComplete"));
+			if(!is_null_or_undefined(context, val)) {
+				debug("listener function is defined");
+				void*[] params = {};
+				unowned JS.Object fun = val.to_object(context);
+				if(fun.is_function(context)) {
+					fun.call_as_function(context, fun, (JS.Value[]) params, null);
 				}
 			} else {
-				//  if(current_card is Greeter.UserCard) {
-				//      switch_to_card((Greeter.UserCard)current_card);
-				//  }
-
-				//  current_card.connecting = false;
-				//  current_card.wrong_credentials();
+				debug("listener function is not defined");
 			}
-		}
-		[DBus(visible = false)]
-		private void show_message(string text, LightDM.MessageType type) {
 
-			//  critical ("message: `%s' (%d): %s", text, type);
+			// compatibility with antergos web-greeter
+			JS.String script = new JS.String("if(typeof authentication_complete == 'function') authentication_complete();");
+			context.evaluate_script(script);
+		}
+
+		private void show_message(string text, LightDM.MessageType type) {
+			critical("message: `%s' (%d)", text, type);
+			JS.String script = new JS.String("if(typeof show_message === 'function') show_message('" + text + "');");
+			context.evaluate_script(script);
 			/*var messagetext = string_to_messagetext(text);
 			   if (messagetext == MessageText.FPRINT_SWIPE || messagetext == MessageText.FPRINT_PLACE) {
 			    // For the fprint module, there is no prompt message from PAM.
@@ -66,7 +99,60 @@ namespace Webkit2gtkGreeter {
 			   }
 			   current_login.show_message (type, messagetext, text);*/
 		}
-		[DBus(visible = false)]
+		public string? get_default_session()
+		{
+			var sessions = new GLib.List<string> ();
+			sessions.append("cinnamon");
+			sessions.append("mate");
+			sessions.append("xfce");
+			sessions.append("plasma");
+			sessions.append("kde-plasma");
+			sessions.append("kde");
+			sessions.append("budgie-desktop");
+			sessions.append("gnome");
+			sessions.append("LXDE");
+			sessions.append("lxqt");
+			sessions.append("pekwm");
+			sessions.append("pantheon");
+			sessions.append("i3");
+			sessions.append("enlightenment");
+			sessions.append("deepin");
+			sessions.append("openbox");
+			sessions.append("awesome");
+			sessions.append("gnome-xorg");
+			sessions.append("ubuntu-xorg");
+
+			foreach(string session in sessions) {
+				var path = Path.build_filename("/usr/share/xsessions/", session.concat(".desktop"), null);
+				if(FileUtils.test(path, FileTest.EXISTS)) {
+					return session;
+				}
+			}
+
+			warning("Could not find a default session.");
+			return null;
+		}
+		public string validate_session(string? session)
+		{
+			/* Make sure the given session actually exists. Return it if it does.
+			   otherwise, return the default session. */
+			if(session != null) {
+				var path = Path.build_filename("/usr/share/xsessions/", session.concat(".desktop"), null);
+				if(!FileUtils.test(path, FileTest.EXISTS)) {
+					debug("Invalid session: '%s'", session);
+					session = null;
+				}
+			}
+
+			if(session == null) {
+				var default_session = get_default_session();
+				debug("Using default session: '%s'", default_session);
+				return default_session;
+			}
+
+			return session;
+		}
+
 		private void show_prompt(string text, LightDM.PromptType type = LightDM.PromptType.QUESTION) {
 			critical("prompt: `%s' (%d)", text, type);
 			/*send_prompt (lightdm_prompttype_to_prompttype(type), string_to_prompttext(text), text);
@@ -80,20 +166,305 @@ namespace Webkit2gtkGreeter {
 			//    }
 			//  }
 		}
-		[DBus(visible = false)]
-		private async void load_users() {
-			try {
-				yield lightdm_greeter.connect_to_daemon(null);
-			} catch(Error e) {
-				critical(e.message);
+
+		public void on_page_created(WebKit.WebExtension extension, WebKit.WebPage page) {
+			debug("page-created");
+		}
+
+		public void on_window_object_cleared(ScriptWorld world, WebPage page, WebKit.Frame frame) {
+			debug("window object cleared");
+			unowned JS.Context context = (JS.GlobalContext)frame.get_javascript_context_for_script_world(world);
+
+			this.context = context;
+
+			setup_global_variables(context);
+			setup_lightdm_object(context);
+		}
+
+		private void setup_global_variables(unowned JS.Context context) {
+			debug("setup_global_variables");
+
+			unowned JS.Object global = context.get_global_object();
+			JS.Value? exception;
+
+			global.set_property(context,
+			                    new JS.String.with_utf8_c_string("CONFIG_DIR"),
+			                    to_js_string(context, Constants.CONF_DIR),
+			                    JS.PropertyAttribute.ReadOnly);
+		}
+
+		private void setup_lightdm_object(JS.Context context) {
+			debug("setup_lightdm_object");
+			unowned JS.Object global = context.get_global_object();
+			JS.Value exception;
+			unowned JS.Value lighdm_val = global.get_property(context, new JS.String("lightdm"));
+			unowned JS.Object obj;
+
+			if(is_null_or_undefined(context, lighdm_val)) {
+				obj = context.make_object();
+			} else {
+				obj = lighdm_val.to_object(context, null);
 			}
 
-			lightdm_greeter.notify_property("show-manual-login-hint");
-			lightdm_greeter.notify_property("has-guest-account-hint");
+			unowned JS.Value sv = load_sessions(context);
+			unowned JS.Object sessions = null;
+
+			if(sv.is_object(context)) {
+				sessions = sv.to_object(context);
+			}
+
+			if(sessions != null && !is_null_or_undefined(context, sessions)) {
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("sessions"),
+				                 sessions,
+				                 JS.PropertyAttribute.None);
+			}
+
+			unowned JS.Value uv = load_users(context);
+			unowned JS.Object users = null;
+
+			if(uv.is_object(context)) {
+				users = uv.to_object(context);
+			}
+
+			if(users != null && !is_null_or_undefined(context, users)) {
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("users"),
+				                 users,
+				                 JS.PropertyAttribute.None);
+			}
+
+			setup_lightdm_functions(context, obj, out exception);
+			setup_lightdm_variables(context, obj, out exception);
+
+			global.set_property(context,
+			                    new JS.String.with_utf8_c_string("lightdm"),
+			                    obj,
+			                    JS.PropertyAttribute.ReadOnly);
+		}
+
+		private unowned JS.Value language_to_object(JS.Context ctx, LightDM.Language language) {
+			unowned JS.Object lang = ctx.make_object();
+			lang.set_property(ctx,
+			                  new JS.String.with_utf8_c_string("code"),
+			                  to_js_string(ctx, language.code),
+			                  JS.PropertyAttribute.None);
+			lang.set_property(ctx,
+			                  new JS.String.with_utf8_c_string("name"),
+			                  to_js_string(ctx, language.name),
+			                  JS.PropertyAttribute.None);
+			lang.set_property(ctx,
+			                  new JS.String.with_utf8_c_string("territory"),
+			                  to_js_string(ctx, language.territory),
+			                  JS.PropertyAttribute.None);
+			return lang;
+		}
+
+		private void setup_lightdm_variables(JS.Context ctx, unowned JS.Object obj, out JS.Value exception = null) {
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("can_hibernate"),
+			                 JS.Value.boolean(ctx, LightDM.get_can_hibernate()),
+			                 JS.PropertyAttribute.None);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("can_suspend"),
+			                 JS.Value.boolean(ctx, LightDM.get_can_suspend()),
+			                 JS.PropertyAttribute.None);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("can_restart"),
+			                 JS.Value.boolean(ctx, LightDM.get_can_restart()),
+			                 JS.PropertyAttribute.None);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("can_shutdown"),
+			                 JS.Value.boolean(ctx, LightDM.get_can_shutdown()),
+			                 JS.PropertyAttribute.None);
+
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("is_authenticated"),
+			                 JS.Value.boolean(ctx, lightdm_greeter.get_is_authenticated()),
+			                 JS.PropertyAttribute.None);
+
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("hostname"),
+			                 to_js_string(ctx, LightDM.get_hostname()),
+			                 JS.PropertyAttribute.None);
+
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("in_authentication"),
+			                 JS.Value.boolean(ctx, lightdm_greeter.in_authentication),
+			                 JS.PropertyAttribute.None);
+
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("default_language"),
+			                 language_to_object(ctx, LightDM.get_language()),
+			                 JS.PropertyAttribute.None);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("default_session"),
+			                 to_js_string(ctx, lightdm_greeter.get_default_session_hint()),
+			                 JS.PropertyAttribute.None);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("authentication_user"),
+			                 to_js_string(ctx, lightdm_greeter.get_authentication_user()),
+			                 JS.PropertyAttribute.None);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("num_users"),
+			                 JS.Value.number(ctx, lightdm_user_list.length),
+			                 JS.PropertyAttribute.None);
+
+			unowned GLib.List<LightDM.Language> languages = LightDM.get_languages();
+			void*[] temp = {};
+			languages.foreach((language) => {
+				temp += (void*)language_to_object(ctx, language);
+			});
+
+			unowned JS.Object arr = ctx.make_array((JS.Value[])temp, out exception);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("languages"),
+			                 arr,
+			                 JS.PropertyAttribute.None);
+
+		}
+
+		private void setup_lightdm_functions(JS.Context context, unowned JS.Object obj, out JS.Value exception = null) {
+			unowned JS.Value fun = obj.get_property(context, new JS.String.with_utf8_c_string("restart"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding restart function");
+				unowned JS.Object restartFun = context.make_function(new JS.String.with_utf8_c_string("restart"), restart);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("restart"),
+				                 restartFun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+
+			fun = obj.get_property(context, new JS.String.with_utf8_c_string("hibernate"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding hibernate function");
+				unowned JS.Object hibernateFun = context.make_function(new JS.String.with_utf8_c_string("hibernate"), hibernate);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("hibernate"),
+				                 hibernateFun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+
+			fun = obj.get_property(context, new JS.String.with_utf8_c_string("shutdown"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding shutdown function");
+				unowned JS.Object shutdownFun = context.make_function(new JS.String.with_utf8_c_string("shutdown"), shutdown);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("shutdown"),
+				                 shutdownFun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+
+			fun = obj.get_property(context, new JS.String.with_utf8_c_string("suspend"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding suspend function");
+				unowned JS.Object suspendFun = context.make_function(new JS.String.with_utf8_c_string("suspend"), suspend);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("suspend"),
+				                 suspendFun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+
+			fun = obj.get_property(context, new JS.String.with_utf8_c_string("start_authentication"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding start_authentication function");
+				unowned JS.Object start_auth_fun = context.make_function(new JS.String.with_utf8_c_string("start_authentication"), start_authentication);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("start_authentication"),
+				                 start_auth_fun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+
+			fun = obj.get_property(context, new JS.String.with_utf8_c_string("cancel_authentication"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding cancel_authentication function");
+				unowned JS.Object cancel_auth_fun = context.make_function(new JS.String.with_utf8_c_string("cancel_authentication"), cancel_authentication);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("cancel_authentication"),
+				                 cancel_auth_fun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+
+			fun = obj.get_property(context, new JS.String.with_utf8_c_string("login"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding login function");
+				unowned JS.Object login_fun = context.make_function(new JS.String.with_utf8_c_string("login"), login);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("login"),
+				                 login_fun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+
+			fun = obj.get_property(context, new JS.String.with_utf8_c_string("provide_secret"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding provide_secret function");
+				unowned JS.Object provide_secret_fun = context.make_function(new JS.String.with_utf8_c_string("provide_secret"), provide_secret);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("provide_secret"),
+				                 provide_secret_fun,
+				                 JS.PropertyAttribute.ReadOnly);
+			}
+		}
+
+		public static unowned JS.Value provide_secret(JS.Context ctx,
+		                                              JS.Object function,
+		                                              JS.Object thisObject,
+		                                              JS.Value[] args,
+		                                              out unowned JS.Value exception) {
+			var password = variant_from_value(ctx, args[0]).get_string();
+			if(password != null) {
+				try {
+					debug("respond password to lightdm");
+					lightdm_greeter.respond(password);
+				} catch(Error e) {
+					critical(e.message);
+				}
+			}
+			return JS.Value.undefined(ctx);
+		}
+
+		public static unowned JS.Object session_to_js_object(JS.Context ctx, LightDM.Session session) {
+			unowned JS.Object obj = ctx.make_object();
+			obj.set_property(ctx, new JS.String("name"), to_js_string(ctx, session.name));
+			obj.set_property(ctx, new JS.String("key"), to_js_string(ctx, session.key));
+			obj.set_property(ctx, new JS.String("comment"), to_js_string(ctx, session.comment));
+			return obj;
+		}
+
+		public unowned JS.Value load_sessions(JS.Context ctx) {
+			debug("build_sessions");
+			JS.Value? exception;
+
+			void*[] params = {};
+			foreach(LightDM.Session s in LightDM.get_sessions()) {
+				debug("session : %s\n", s.name);
+				params += (void*)session_to_js_object(ctx, s);
+			}
+
+			unowned JS.Object arr = ctx.make_array((JS.Value[]) params, out exception);
+			if(exception != null) {
+				error(exception_to_string(ctx, exception));
+			}
+			return arr;
+		}
+
+		private static unowned JS.Object user_to_js_object(JS.Context ctx, LightDM.User user) {
+			unowned JS.Object obj = ctx.make_object();
+			obj.set_property(ctx, new JS.String("display_name"), to_js_string(ctx, user.display_name));
+			obj.set_property(ctx, new JS.String("name"), to_js_string(ctx, user.name));
+			obj.set_property(ctx, new JS.String("session"), to_js_string(ctx, user.session));
+			return obj;
+		}
+
+		private unowned JS.Value load_users(JS.Context ctx) {
+			void*[] params = {};
+			JS.Value? exception;
 
 			if(lightdm_user_list.length > 0) {
-				lightdm_user_list.users.foreach((user) => {
-					//  add_card(user);
+				unowned GLib.List<LightDM.User> users = lightdm_user_list.users;
+				users.foreach((user) => {
+					debug("user : %s\n", user.name);
+					params += (void*)user_to_js_object(ctx, user);
 				});
 
 				unowned string? select_user = lightdm_greeter.select_user_hint;
@@ -119,9 +490,8 @@ namespace Webkit2gtkGreeter {
 					//  }
 				}
 
-				if(lightdm_greeter.default_session_hint != null) {
-					//  get_action_group("session").activate_action("select", new GLib.Variant.string (lightdm_greeter.default_session_hint));
-				}
+				unowned JS.Object arr = ctx.make_array((JS.Value[]) params, out exception);
+				return arr;
 			} else {
 				/* We're not certain that scaling factor will change, but try to wait for GSD in case it does */
 				//  Timeout.add(500, () => {
@@ -147,109 +517,62 @@ namespace Webkit2gtkGreeter {
 				//      return Source.REMOVE;
 				//  });
 			}
-		}
-		[DBus(visible = false)]
-		public void on_bus_aquired(DBusConnection connection) {
-			try {
-				message("registering dbus object");
-				connection.register_object("/io/github/webkit2gtk-greeter/jsapi", this);
-			} catch(IOError error) {
-				warning("Could not register service jsapi: %s", error.message);
-			}
+			return null;
 		}
 
-		[DBus(visible = false)]
-		public void on_page_created(WebKit.WebExtension extension, WebKit.WebPage page) {
-			message("page-created");
-			this.page = page;
+		public static unowned JS.Value start_authentication(JS.Context ctx,
+		                                                    JS.Object function,
+		                                                    JS.Object thisObject,
+		                                                    JS.Value[] args,
+		                                                    out unowned JS.Value exception) {
+			debug("start_authentication function called");
+			exception = null;
+
+			string username = variant_from_value(ctx, args[0]).get_string();
+			lightdm_greeter.authenticate(username);
+			return JS.Value.undefined(ctx);
 		}
 
-		[DBus(visible = false)]
-		public void on_window_object_cleared(ScriptWorld world, WebPage page, WebKit.Frame frame) {
-			message("window object cleared");
-			unowned JS.Context context = (JS.GlobalContext)frame.get_javascript_context_for_script_world(world);
+		public static unowned JS.Value cancel_authentication(JS.Context ctx,
+		                                                     JS.Object function,
+		                                                     JS.Object thisObject,
+		                                                     JS.Value[] args,
+		                                                     out unowned JS.Value exception) {
+			debug("cancel_authentication function called");
+			exception = null;
 
-
-			//  unowned JS.Object global = context.get_global_object();
-
-			//  unowned JS.Object cb = context.make_function(new JS.String.with_utf8_c_string("sayHello"), string_callback);
-			//  unowned JS.Value obj = JSUtils.object_from_JSON(context, "{
-			//    \"number\": 1,
-			//    \"string\": \"Hello World!\",
-			//    \"array\": [\"str1\",\"str2\",\"str3\"]
-			//  }");
-			build_global_object(context);
+			lightdm_greeter.cancel_authentication();
+			return JS.Value.undefined(ctx);
 		}
-		[DBus(visible = false)]
-		private void build_global_object(JS.Context context) {
-			unowned JS.Object global = context.get_global_object();
-			JS.Value exception;
-			unowned JS.Object obj = context.make_object();
 
-			message("checking restart function");
-			unowned JS.Value res = obj.get_property(context, new JS.String.with_utf8_c_string("restart"), out exception);
-			if(res.is_null(context) || res.is_undefined(context)) {
-				message("adding restart function");
-				unowned JS.Object restartFun = context.make_function(new JS.String.with_utf8_c_string("restart"), restart);
-				obj.set_property(context,
-				                 new JS.String.with_utf8_c_string("restart"),
-				                 restartFun,
-				                 JS.PropertyAttribute.ReadOnly);
-			}
+		public static unowned JS.Value login(JS.Context ctx,
+		                                     JS.Object function,
+		                                     JS.Object thisObject,
+		                                     JS.Value[] args,
+		                                     out unowned JS.Value exception) {
+			debug("login function called");
+			exception = null;
+			return JS.Value.undefined(ctx);
+		}
 
-			global.set_property(context,
-			                    new JS.String.with_utf8_c_string("lightdm"),
-			                    obj,
-			                    JS.PropertyAttribute.ReadOnly);
-		}
-		[DBus(visible = false)]
-		private void build_functions() {
-
-		}
-		[DBus(visible = false)]
-		public static async void build_sessions() {
-			var dir = File.new_for_path("/usr/share/xsessions/");
-			try {
-				// asynchronous call, to get directory entries
-				var e = yield dir.enumerate_children_async(FileAttribute.STANDARD_NAME,
-				                                           0, Priority.DEFAULT);
-				while(true) {
-					// asynchronous call, to get entries so far
-					var files = yield e.next_files_async(10, Priority.DEFAULT);
-					if(files == null) {
-						break;
-					}
-					// append the files found so far to the list
-					foreach(var info in files) {
-						var file = File.new_for_path("/usr/share/xsessions/");
-						message(info.get_name());
-					}
-				}
-			} catch(Error err) {
-				stderr.printf("Error: list_files failed: %s\n", err.message);
-			}
-		}
-		[DBus(visible = false)]
-		private void build_users() {
-
-		}
 		public static unowned JS.Value restart(JS.Context ctx,
 		                                       JS.Object function,
 		                                       JS.Object thisObject,
 		                                       JS.Value[] args,
 		                                       out unowned JS.Value exception) {
-			message("restart function called");
+			debug("restart function called");
 			exception = null;
-			return JS.Value.undefined(ctx);
+			return JS.Value.boolean(ctx, LightDM.restart());
 		}
+
 		public static unowned JS.Value shutdown(JS.Context ctx,
 		                                        JS.Object function,
 		                                        JS.Object thisObject,
 		                                        JS.Value[] args,
 		                                        out unowned JS.Value exception) {
-			message("shutdown function called");
+			debug("shutdown function called");
 			exception = null;
-			return JS.Value.undefined(ctx);
+			return JS.Value.boolean(ctx, LightDM.shutdown());
 		}
 
 		public static unowned JS.Value hibernate(JS.Context ctx,
@@ -257,9 +580,9 @@ namespace Webkit2gtkGreeter {
 		                                         JS.Object thisObject,
 		                                         JS.Value[] args,
 		                                         out unowned JS.Value exception) {
-			message("hibernate function called");
+			debug("hibernate function called");
 			exception = null;
-			return JS.Value.undefined(ctx);
+			return JS.Value.boolean(ctx, LightDM.hibernate());
 		}
 
 		public static unowned JS.Value suspend(JS.Context ctx,
@@ -267,51 +590,25 @@ namespace Webkit2gtkGreeter {
 		                                       JS.Object thisObject,
 		                                       JS.Value[] args,
 		                                       out unowned JS.Value exception) {
-			message("suspend function called");
+			debug("suspend function called");
 			exception = null;
-			return JS.Value.undefined(ctx);
+			return JS.Value.boolean(ctx, LightDM.suspend());
 		}
 
-		public static unowned JS.Value string_callback(JS.Context ctx,
-		                                               JS.Object function,
-		                                               JS.Object thisObject,
-		                                               JS.Value[] args,
-		                                               out unowned JS.Value exception) {
-			exception = null;
-			unowned JS.Value undefined = JS.Value.undefined(ctx);
-
-			Variant[] ? data = null;
-
-			try {
-
-				for(var i = 0; i < args.length; i++) {
-					data[i] = variant_from_value(ctx, args[i]);
-				}
-				if(jsapi != null) {
-					jsapi.on_string_callback();
-					message("string_callback got called");
-				}
-				unowned JS.Value str = JS.Value.string(ctx, new JS.String("Hello From Native Code"));
-				return str;
-			} catch(JSApiError e) {
-				message(e.message);
-				exception = create_exception(ctx, "Argument %d: %s".printf(1, e.message));
-				return undefined;
-			}
-			return undefined;
-		}
 	}
 
 
 	[CCode(cname = "G_MODULE_EXPORT webkit_web_extension_initialize", instance_pos = -1)]
-	void webkit_web_extension_initialize(WebKit.WebExtension extension) {
-		message("core extension initilalization");
-		Webkit2gtkGreeter.jsapi = new JSApi();
-		//  jsapi.build_sessions();
+	public void webkit_web_extension_initialize(WebKit.WebExtension extension) {
+		debug("core extension initilalization");
+		jsapi = new JSApi();
+
 		extension.page_created.connect(jsapi.on_page_created);
 		var scriptWorld = WebKit.ScriptWorld.get_default();
 		scriptWorld.window_object_cleared.connect(jsapi.on_window_object_cleared);
-		Bus.own_name(BusType.SESSION, "io.github.webkit2gtk-greeter.JSApi", BusNameOwnerFlags.NONE,
-		             jsapi.on_bus_aquired, null, () => { warning("Could not aquire name"); });
+		//  Bus.own_name(BusType.SESSION, "io.github.webkit2gtk-greeter.JSApi", BusNameOwnerFlags.NONE,
+		//               jsapi.on_bus_aquired, null, () => { warning("Could not aquire name"); });
+
+		jsapi.ref();
 	}
 }
