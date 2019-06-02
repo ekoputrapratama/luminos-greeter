@@ -30,8 +30,8 @@ config_header = configure_file (
     configuration: conf_data
 )
 
-greeter_resources = gnome.compile_resources('webkit2gtk-greeter-resources',
-  'webkit2gtk-greeter.gresource.xml'
+greeter_resources = gnome.compile_resources('webkitgtk-greeter-resources',
+  'webkitgtk-greeter.gresource.xml'
 )
 
 greeter_client_vala_sources = files(
@@ -99,6 +99,5 @@ greeter_bin = executable(meson.project_name(), greeter_bin_sources,
   vala_args: greeter_vala_options,
   dependencies: greeter_bin_dependencies,
   install: true,
-  c_args: greeter_c_options,
-  install_dir: '/opt/webkit2gtk-greeter'
+  c_args: greeter_c_options
 )

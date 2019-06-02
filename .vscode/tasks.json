@@ -61,19 +61,19 @@
     {
       "label": "Run release",
       "type": "shell",
-      "command": "./build/greeter/webkit2gtk-greeter",
+      "command": "./build/greeter/webkitgtk-greeter",
       "problemMatcher": []
     },
     {
       "label": "Run in development mode",
       "type": "shell",
-      "command": "G_MESSAGES_DEBUG=all ./build/greeter/webkit2gtk-greeter --dev --debug",
+      "command": "G_MESSAGES_DEBUG=all ./build/greeter/webkitgtk-greeter --dev --debug",
       "problemMatcher": []
     },
     {
       "label": "Run with gdb",
       "type": "shell",
-      "command": "gdb --args ./build/greeter/webkit2gtk-greeter --dev --debug",
+      "command": "gdb --args ./build/greeter/webkitgtk-greeter --dev --debug",
       "problemMatcher": []
     }
   ]

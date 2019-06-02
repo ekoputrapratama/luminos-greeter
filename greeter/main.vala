@@ -1,6 +1,6 @@
 
 using GLib;
-namespace Webkit2gtkGreeter {
+namespace WebkitGtkGreeter {
 
 	static int main(string[] args) {
 		bool do_show_version = false;
@@ -35,14 +35,13 @@ namespace Webkit2gtkGreeter {
 		if(do_show_version)
 		{
 			/* Note, not translated so can be easily parsed */
-			stderr.printf(Constants.GETTEXT_PACKAGE + " %s\n", Constants.VERSION);
+			//  stderr.printf(Constants.GETTEXT_PACKAGE + " %s\n", Constants.VERSION);
 			return Posix.EXIT_SUCCESS;
 		}
 		AppOptions opts = {false};
 		opts.dev = dev;
 		opts.debug = do_debug;
-		opts.application_id = Constants.APPLICATION_ID;
 
-		return new Webkit2gtkGreeter.GreeterApplication(opts).run(args);
+		return new WebkitGtkGreeter.GreeterApplication(opts).run(args);
 	}
 }

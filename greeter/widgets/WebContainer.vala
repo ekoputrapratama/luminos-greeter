@@ -2,9 +2,9 @@ using Gee;
 using GLib;
 using WebKit;
 
-namespace Webkit2gtkGreeter {
+namespace WebkitGtkGreeter {
 
-	[DBus(name = "io.github.webkit2gtk-greeter.JSApi")]
+	[DBus(name = "io.github.webkitgtk-greeter.JSApi")]
 	interface JSApi : Object {
 		public signal void on_string_callback();
 	}

@@ -1,4 +1,4 @@
-project('webkit2gtk-greeter','c', 'vala',
+project('webkitgtk-greeter','c', 'vala',
   version: '1.0.0',
   meson_version: '>= 0.40.0',
 )
@@ -16,7 +16,7 @@ reference_tracking = get_option('ref_tracking')
 poodle = get_option('poodle')
 valac = meson.get_compiler('vala')
 
-application_id = 'io.github.webkit2gtk-greeter'
+application_id = 'io.github.webkitgtk-greeter'
 config_h_dir = include_directories('.')
 
 target_gtk = '3.24.7'

@@ -2,12 +2,12 @@ using WebKit;
 using JS;
 using GLib;
 using Gtk;
-using Webkit2gtkGreeter.JSUtils;
+using WebkitGtkGreeter.JSUtils;
 
 [CCode(cname = "G_MODULE_EXPORT webkit_web_extension_initialize", instance_pos = -1)]
 public void webkit_web_extension_initialize(WebKit.WebExtension extension) {
 	message("config-manager extension initilalization");
-	Webkit2gtkGreeter.ClientConfigManager instance = new Webkit2gtkGreeter.ClientConfigManager();
+	WebkitGtkGreeter.ClientConfigManager instance = new WebkitGtkGreeter.ClientConfigManager();
 
 	extension.page_created.connect(instance.on_page_created);
 	var scriptWorld = WebKit.ScriptWorld.get_default();
@@ -19,7 +19,7 @@ public void webkit_web_extension_initialize(WebKit.WebExtension extension) {
 	instance.ref();
 }
 
-namespace Webkit2gtkGreeter {
+namespace WebkitGtkGreeter {
 
 	//  [DBus(name = "io.github.webkit2gtk-greeter.config-manager")]
 	class ClientConfigManager : GLib.Object {

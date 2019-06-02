@@ -1,7 +1,7 @@
 using Wnck;
 using Gee;
 
-namespace Webkit2gtkGreeter {
+namespace WebkitGtkGreeter {
 	public struct AppOptions {
 		public bool dev;
 		public bool debug;
@@ -9,7 +9,7 @@ namespace Webkit2gtkGreeter {
 	}
 
 	public class GreeterApplication : Gtk.Application {
-		Webkit2gtkGreeter.Window window;
+		WebkitGtkGreeter.Window window;
 		AppOptions options;
 		ConfigReader config_rdr;
 
@@ -22,7 +22,7 @@ namespace Webkit2gtkGreeter {
 		}
 
 		public override void activate() {
-			window = new Webkit2gtkGreeter.Window(options);
+			window = new WebkitGtkGreeter.Window(options);
 			add_window(window);
 
 			// TODO : load active theme based on configuration
@@ -32,7 +32,7 @@ namespace Webkit2gtkGreeter {
 			string theme_name = greeter_setting.get("webkit_theme");
 			debug("using theme %s", theme_name);
 
-			var url = "file:///opt/webkit2gtk-greeter/themes/default/index.html";
+			var url = "file://" + Constants.THEMES_DIR + Path.DIR_SEPARATOR_S + "default/index.html";
 			debug("ensure theme exists %s", theme_name);
 			if(ensure_theme_exists(theme_name)) {
 				url = get_theme_url(theme_name);
@@ -47,6 +47,7 @@ namespace Webkit2gtkGreeter {
 
 			window.load(url, options.debug);
 		}
+
 		private string get_theme_url(string name) {
 			var path = Constants.THEMES_DIR + Path.DIR_SEPARATOR_S + name;
 			var config_path = path + Path.DIR_SEPARATOR_S + "index.theme";
@@ -61,9 +62,11 @@ namespace Webkit2gtkGreeter {
 
 			return "file://" + index_path;
 		}
+
 		private bool ensure_theme_exists(string theme) {
 			var path = Constants.THEMES_DIR + Path.DIR_SEPARATOR_S + theme;
 			var dir = File.new_for_path(path);
+
 			debug("checking theme path %s", path);
 			if(dir.query_exists() && dir.query_file_type(0) == FileType.DIRECTORY) {
 				debug("theme folder exists, checking theme description file");
@@ -73,8 +76,10 @@ namespace Webkit2gtkGreeter {
 					Map<string, Map<string, string> > theme_setting = config_rdr.load_config_file(config_path);
 					Map<string, string> config = theme_setting.get("theme");
 					string index_path = config.get("url");
+
 					bool is_absolute = Path.is_absolute(index_path);
 					debug("is_absolute url %s", is_absolute.to_string());
+
 					if(!is_absolute)
 						index_path = path + Path.DIR_SEPARATOR_S + index_path;
 

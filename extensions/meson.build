@@ -5,7 +5,7 @@ core_sources = [
   'core/jsapi.vala',
   'jsutils.vala',
   'core/DesktopFileReader.vala',
-  
+
 ]
 
 core_deps = [
@@ -17,11 +17,11 @@ core_deps = [
   gee,
 ]
 
-core_extension = library('webkit2gtk-greeter-core', core_sources,
-  vala_args: ['--vapi=webkit2gtk-greeter.vapi'],
+core_extension = library('webkitgtk-greeter-core', core_sources,
+  vala_args: ['--vapi=webkitgtk-greeter-core.vapi'],
   dependencies: core_deps,
   install: true,
-  install_dir: '/opt/webkit2gtk-greeter/extensions'
+  install_dir: '/opt/webkitgtk-greeter/extensions'
 )
 
 #Config Manager extension
@@ -37,9 +37,9 @@ config_manager_dependencies = [
   json_glib,
   gee,
 ]
-config_manager_extension = library('webkit2gtk-greeter-config-manager', config_manager_sources,
-  vala_args: ['--vapi=webkit2gtk-greeter.vapi'],
+config_manager_extension = library('webkitgtk-greeter-config-manager', config_manager_sources,
+  vala_args: ['--vapi=webkitgtk-greeter-config-manager.vapi'],
   dependencies: config_manager_dependencies,
   install: true,
-  install_dir: ['/opt/webkit2gtk-greeter/extensions',true,true]
+  install_dir: ['/opt/webkitgtk-greeter/extensions', true, true]
 )

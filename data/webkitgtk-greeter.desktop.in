@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=LightDM WebkitGtk Greeter
+Comment=LightDM Greeter
+Type=Application
+Exec=webkitgtk-greeter

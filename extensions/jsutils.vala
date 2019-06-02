@@ -23,7 +23,7 @@
  */
 using JS;
 
-namespace Webkit2gtkGreeter.JSUtils {
+namespace WebkitGtkGreeter.JSUtils {
 /**
  * Converts JavaScriptCore string to Vala UTF-8 string
  *

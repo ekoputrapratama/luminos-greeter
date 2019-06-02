@@ -1,4 +1,4 @@
-namespace Webkit2gtkGreeter {
+namespace WebkitGtkGreeter {
 	public struct DesktopEntry {
 		public string name;
 		public string comment;

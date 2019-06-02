@@ -1,8 +1,8 @@
 using Gee;
 using JS;
-using Webkit2gtkGreeter.JSUtils;
+using WebkitGtkGreeter.JSUtils;
 
-namespace Webkit2gtkGreeter {
+namespace WebkitGtkGreeter {
 
 	public class ConfigManager : GLib.Object {
 

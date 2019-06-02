@@ -2,11 +2,11 @@ using WebKit;
 using JS;
 using GLib;
 using Gtk;
-using Webkit2gtkGreeter.JSUtils;
+using WebkitGtkGreeter.JSUtils;
 using LightDM;
 using Gee;
 
-namespace Webkit2gtkGreeter {
+namespace WebkitGtkGreeter {
 	JSApi jsapi = null;
 	private LightDM.Greeter lightdm_greeter;
 	private unowned LightDM.UserList lightdm_user_list;

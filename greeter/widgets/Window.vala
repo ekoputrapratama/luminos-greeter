@@ -3,11 +3,11 @@ using Gtk;
 using Gdk;
 using GLib.Environment;
 using Cairo;
-namespace Webkit2gtkGreeter {
-	[GtkTemplate(ui = "/io/github/webkit2gtk-greeter/ui/window.ui")]
-	class Window : Gtk.Window {
+namespace WebkitGtkGreeter {
+	[GtkTemplate(ui = "/io/github/webkitgtk-greeter/ui/window.ui")]
+	public class Window : Gtk.Window {
 
-		Webkit2gtkGreeter.WebContainer webview;
+		WebkitGtkGreeter.WebContainer webview;
 		bool enable_transparancy = false;
 		private int count = 0;
 
@@ -17,7 +17,7 @@ namespace Webkit2gtkGreeter {
 		}
 
 		public Window(unowned AppOptions opts) {
-			string ext_path = "/opt/webkit2gtk-greeter/extensions";
+			string ext_path = "/opt/webkitgtk-greeter/extensions";
 
 			if(opts.dev) {
 				var destination = File.new_for_path("build/extensions");
@@ -30,7 +30,7 @@ namespace Webkit2gtkGreeter {
 
 			this.screen_changed.connect(on_window_screen_changed);
 
-			string cacheDir = GLib.Path.build_filename(get_user_cache_dir(), "webkit2gtk-greeter", null);
+			string cacheDir = GLib.Path.build_filename(get_user_cache_dir(), "webkitgtk-greeter", null);
 			WebKit.WebContext context;
 
 			unowned WebKit.WebsiteDataManager* dataManager = new WebKit.WebsiteDataManager.ephemeral();
@@ -39,7 +39,7 @@ namespace Webkit2gtkGreeter {
 			context.set_process_model(WebKit.ProcessModel.MULTIPLE_SECONDARY_PROCESSES);
 			context.set_tls_errors_policy(WebKit.TLSErrorsPolicy.IGNORE);
 
-			this.webview = new Webkit2gtkGreeter.WebContainer.with_context(context);
+			this.webview = new WebkitGtkGreeter.WebContainer.with_context(context);
 
 			UserContentManager contman = this.webview.user_content_manager;
 			this.webview.load_changed.connect(load_changed);
