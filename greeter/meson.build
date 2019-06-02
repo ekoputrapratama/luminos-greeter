@@ -3,10 +3,11 @@
 greeter_c_options = [
   '-DWNCK_I_KNOW_THIS_IS_UNSTABLE',
   '-lm',
-  '-DGETTEXT_PACKAGE=\"$(GETTEXT_PACKAGE)\"',
+  # '-DGETTEXT_PACKAGE=\"$(GETTEXT_PACKAGE)\"',
   '-DLOCALEDIR=\""$(localedir)"\"',
-	'-DVERSION=\"$(VERSION)\"',
-	'-DPKGDATADIR=\""$(pkgdatadir)"\"'
+	# '-DVERSION=\"$(VERSION)\"',
+	'-DPKGDATADIR=\""$(pkgdatadir)"\"',
+  '-include', 'config.h'
 ]
 
 greeter_vala_options = [
@@ -14,7 +15,14 @@ greeter_vala_options = [
   '--enable-checking'
 ]
 
-
+# Symbols for valac's preprocessor must be defined as compiler args,
+# not in the code or in config.h
+if reference_tracking
+  geary_vala_options += [ '--define=REF_TRACKING' ]
+endif
+if not poodle
+  geary_vala_options += [ '--define=DISABLE_POODLE' ]
+endif
 
 config_header = configure_file (
     input: 'config.vala.in',
@@ -29,12 +37,14 @@ greeter_resources = gnome.compile_resources('webkit2gtk-greeter-resources',
 greeter_client_vala_sources = files(
   'widgets/Window.vala',
   'widgets/WebContainer.vala',
-  'GreeterApplication.vala', 
+  'GreeterApplication.vala',
+  'utils/ConfigReader.vala',
 )
 
 greeter_client_sources = [
   greeter_client_vala_sources,
-  greeter_resources
+  greeter_resources,
+  config_header
 ]
 
 greeter_client_dependencies = [
@@ -74,7 +84,7 @@ greeter_bin_sources = files(
 )
 greeter_bin_sources += [
   greeter_resources,
-  config_header
+  # config_header
 ]
 greeter_bin_dependencies = [
   posix,
