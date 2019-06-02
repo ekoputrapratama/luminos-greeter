@@ -445,9 +445,6 @@ namespace Webkit2gtkGreeter {
 					split = regex.split(line);
 					var res = section.split(line);
 					if(res.length > 1) {
-						if(curSec != null && section_name != null) {
-
-						}
 						section_name = res[1];
 						curSec = ctx.make_object();
 						config.set_property(ctx, new JS.String(res[1]), curSec);

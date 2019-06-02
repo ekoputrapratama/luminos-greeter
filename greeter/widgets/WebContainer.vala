@@ -11,7 +11,6 @@ namespace Webkit2gtkGreeter {
 
 	public class WebContainer: WebView {
 		private JSApi messenger = null;
-		private int count = 0;
 		public File launchers_folder { get; private set; }
 		public File config_folder { get; construct; }
 		public WebContext context {get; set;}
@@ -24,8 +23,7 @@ namespace Webkit2gtkGreeter {
 		public WebContainer() {
 			this.init();
 		}
-		construct
-		{
+		construct {
 
 		}
 		public void init() {
@@ -37,8 +35,8 @@ namespace Webkit2gtkGreeter {
 			settings.allow_universal_access_from_file_urls = true;
 			settings.enable_developer_extras = true;
 			settings.enable_webgl = true;
-			Bus.watch_name(BusType.SESSION, "io.github.webkit2gtk-greeter.JSApi", BusNameWatcherFlags.NONE,
-			               (connection, name, owner) => { on_extension_appeared(connection, name, owner); }, null);
+			//  Bus.watch_name(BusType.SESSION, "io.github.webkit2gtk-greeter.JSApi", BusNameWatcherFlags.NONE,
+			//                 (connection, name, owner) => { on_extension_appeared(connection, name, owner); }, null);
 		}
 		private void on_extension_appeared(DBusConnection connection, string name, string owner) {
 			try {
