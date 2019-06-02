@@ -1,1 +1,3 @@
 option('pkgdir', type : 'string', value : '/opt/webkit2gtk-greeter', description : 'Webkit Greeter data directory')
+option('poodle', type: 'boolean', value: true, description: 'Whether to apply the POODLE SSLv3 fix.')
+option('ref_tracking', type: 'boolean', value: false, description: 'Whether to use explicit reference tracking.')
