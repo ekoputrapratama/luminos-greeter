@@ -35,7 +35,8 @@ endif
 install_data('io.github.webkit2gtk-greeter.gschema.xml',
   install_dir: join_paths(get_option('datadir'), 'glib-2.0/schemas')
 )
-install_subdir('static', install_dir : join_paths('/opt','webkit2gtk-greeter'))
+
+install_subdir('_vendor', install_dir : '/usr/share/lightdm-webkit')
 install_subdir('themes', install_dir : '/usr/share/lightdm-webkit')
 
 compile_schemas = find_program('glib-compile-schemas', required: false)
