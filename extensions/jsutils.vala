@@ -22,8 +22,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using JS;
+using LuminosGreeter.Utility;
 
-namespace WebkitGtkGreeter.JSUtils {
+namespace LuminosGreeter.JSUtils {
 /**
  * Converts JavaScriptCore string to Vala UTF-8 string
  *
@@ -366,26 +367,13 @@ namespace WebkitGtkGreeter.JSUtils {
 
 			return builder.end();
 		}
-		warning("Attempt to convert `undefined` JavaScript type. This might be a programmer error!");
-		return new Variant.string("<ERROR: UNDEFINED VALUE TYPE>");
+		throw new JSApiError.WRONG_TYPE("Attempt to convert ` undefined ` JavaScript type .");
+		//  return new Variant.string("<ERROR: UNDEFINED VALUE TYPE>");
 	}
-	public static bool is_null_or_undefined(JS.Context ctx, unowned JS.Value value) {
+	public static bool is_null_or_undefined(JS.Context ctx, JS.Value value) {
 		return value.is_null(ctx) || value.is_undefined(ctx);
 	}
-	public string array_string_to_string(string[] array) {
-		string result = "[";
-		for(int i = 0; i < array.length; i++) {
-			if(i == (array.length - 1)) {
-				result += array[i] + "]";
-			} else {
-				result += array[i] + ",";
-			}
-		}
-		if(array.length < 1) {
-			result += "]";
-		}
-		return result;
-	}
+
 	public unowned JS.Object remove_property(JS.Context ctx, JS.Object obj, string key) {
 		message("remove_property called to remove property %s", key);
 		unowned JS.Object newObj = ctx.make_object();
@@ -404,7 +392,7 @@ namespace WebkitGtkGreeter.JSUtils {
 		message("new propertyNames : %s", array_string_to_string(newPropertyNames));
 		return newObj;
 	}
-	public static unowned JS.Value get_js_property_names(JS.Context ctx, unowned JS.Value value) {
+	public static unowned JS.Value get_js_property_names(JS.Context ctx, JS.Value value) {
 		if(value.is_object(ctx)) {
 			JS.Value? exception;
 			JS.String name = new JS.String.with_utf8_c_string("Object");
@@ -428,7 +416,7 @@ namespace WebkitGtkGreeter.JSUtils {
 		return JS.Value.undefined(ctx);
 	}
 
-	public static string[] get_property_names(JS.Context ctx, unowned JS.Value value) {
+	public static string[]? get_property_names(JS.Context ctx, JS.Value value) {
 		if(value.is_object(ctx)) {
 			JS.Value? exception;
 			JS.String name = new JS.String.with_utf8_c_string("Object");
@@ -454,7 +442,7 @@ namespace WebkitGtkGreeter.JSUtils {
 		return null;
 	}
 
-	public static bool is_js_array(JS.Context ctx, unowned JS.Value value) {
+	public static bool is_js_array(JS.Context ctx, JS.Value value) {
 		if(value.is_object(ctx)) {
 			JS.Value? exception;
 			JS.String name = new JS.String.with_utf8_c_string("Array");
@@ -480,12 +468,11 @@ namespace WebkitGtkGreeter.JSUtils {
 		return JS.Value.string(ctx, new JS.String(val));
 	}
 
-	public static bool has_property(JS.Context ctx, unowned JS.Object? obj, string name) {
+	public static bool has_property(JS.Context ctx, JS.Object obj, string name) {
 		unowned JS.Value val = obj.get_property(ctx, new JS.String(name));
 		return !val.is_null(ctx) && !val.is_undefined(ctx);
 	}
 
-	[DBus(name = "io.github.webkit2gtk-greeter.JSApi")]
 	public errordomain JSApiError {
 		ERROR,
 		/**
