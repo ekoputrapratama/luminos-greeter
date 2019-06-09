@@ -47,7 +47,7 @@
     },
     "actionButton": {
       "color": "#FFF",
-      "background": "none"
+      "background": "rgba(51,51,51,1)"
     },
     "actionButton:hover": {
       "color": "#FFF",

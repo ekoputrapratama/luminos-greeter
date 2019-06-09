@@ -3,10 +3,18 @@ html {
   display: block;
   min-height: 100%;
   font-family: roboto, arial, sans-serif;
-  overflow:hidden;
+  overflow: hidden;
 }
-[hidden]{
-  display:none !important;
+[hidden] {
+  display: none !important;
+}
+#bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border: none;
 }
 #container {
   display: block;
@@ -14,17 +22,17 @@ html {
   overflow: hidden;
 }
 #bg-switch-toggle {
-  z-index:2;
+  z-index: 2;
 }
 #bg-switch-close {
   pointer-events: all;
   cursor: pointer;
 }
-.switch-container{
+.switch-container {
   pointer-events: none;
 }
-.bgs{
-  display:flex;
+.bgs {
+  display: flex;
   flex-direction: column;
 }
 #container .content {
@@ -44,7 +52,7 @@ html {
   float: left;
   display: flex;
   flex-direction: column;
-  flex:1 1 auto;
+  flex: 1 1 auto;
 }
 #container .content .content-header,
 #container .content .item,
@@ -52,19 +60,20 @@ html {
   padding-left: 40px;
   padding-right: 40px;
 }
-.content .account-list, .content .login {
+.content .account-list,
+.content .login {
   flex-grow: 1;
   flex-shrink: 0;
   max-height: calc(500px - 71px);
 }
 #container .content .content-footer {
   box-sizing: border-box;
-  min-height:35px;
+  min-height: 35px;
   flex-grow: 0;
   flex-shrink: 1;
 }
 .content-footer > #actionsArea {
-  padding:10px 0px;
+  padding: 10px 0px;
   margin-right: 40px;
 }
 #container .content .content-header h1 {
@@ -126,7 +135,13 @@ html {
   transform: translateY(-50%);
 }
 #container .content .current-user-login .selected-user > .item .pic img,
-#container .content .current-user-login .content-footer > .other-account .pic img {
+#container
+  .content
+  .current-user-login
+  .content-footer
+  > .other-account
+  .pic
+  img {
   max-height: 100%;
   max-width: 100%;
 }
@@ -136,7 +151,13 @@ html {
   padding: 0;
 }
 #container .content .current-user-login .selected-user > .item .info p,
-#container .content .current-user-login .content-footer > .other-account .info p {
+#container
+  .content
+  .current-user-login
+  .content-footer
+  > .other-account
+  .info
+  p {
   margin: 0;
 }
 #container .content .account-list {
@@ -289,7 +310,7 @@ html {
 
 .input:before {
   content: "";
-  background: var(--input-line-background,rgba(0, 0, 0, 0.1));
+  background: var(--input-line-background, rgba(0, 0, 0, 0.1));
   z-index: 3;
 }
 
@@ -308,28 +329,39 @@ html {
   line-height: 60px;
 }
 
-.actionButton,.other-account {
+.actionButton,
+.other-account {
   color: var(--action-button-color);
   background: var(--action-button-background);
 }
-.actionButton:hover,.other-account:hover{
+.actionButton:hover,
+.other-account:hover {
   color: var(--action-button-hover-color);
   background: var(--action-button-hover-background);
 }
 #signin-banner-container1 {
-  box-sizing:border-box;
-  position:relative;
-  height: 24px;
-  max-width: 450px;
+  box-sizing: border-box;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 0.4fr;
+  grid-template-rows: 1fr;
   z-index: 3;
   padding-top: 48px;
   padding-left: 40px;
   padding-right: 40px;
-  padding-bottom:35px;
+  padding-bottom: 35px;
 }
-#signin-banner img{
+#signin-banner {
+  display: inline-flex;
+  height: 24px;
+  max-width: 450px;
+}
+#session-list {
+  display: inline-flex;
+}
+#signin-banner img {
   max-height: 100%;
-  fill:#FFF;
+  fill: #fff;
 }
 #signin-banner-container2 {
   display: inline-block;
@@ -342,15 +374,15 @@ html[dir="rtl"] #signin-banner-container2 {
 }
 
 #signin-banner {
-  display: block;
+  /* display: block; */
   border-radius: 4px;
   /* color: #fff; */
   font-family: "Roboto";
   font-size: 13px;
   position: relative;
-  height:35px;
+  height: 35px;
 }
-#signin-banner img{
+#signin-banner img {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -371,20 +403,23 @@ html[dir="rtl"] #signin-banner-container2 {
 }
 
 .login__submit {
-  -webkit-transition: width 200ms ease-in 200ms, padding 200ms ease-out 200ms, border-radius 200ms ease-in;
-  transition: width 200ms ease-in 200ms, padding 200ms ease-out 200ms, border-radius 200ms ease-in;
+  -webkit-transition: width 200ms ease-in 200ms, padding 200ms ease-out 200ms,
+    border-radius 200ms ease-in;
+  transition: width 200ms ease-in 200ms, padding 200ms ease-out 200ms,
+    border-radius 200ms ease-in;
   position: relative;
-  
+
   width: 100%;
   height: 50px;
-  margin:0 auto;
+  margin: 0 auto;
   color: rgba(255, 255, 255, 0.8);
-  background:  #4285f4;
+  background: #4285f4;
   font-size: 15px;
   border-radius: 30px;
   cursor: pointer;
   overflow: hidden;
-  border:none;
+  border: none;
+  font-weight: bold;
 }
 
 .login__submit:after {
@@ -406,8 +441,10 @@ html[dir="rtl"] #signin-banner-container2 {
 }
 
 .login__submit.processing {
-  -webkit-transition: width 200ms ease-in, padding 200ms ease-out, border-radius 200ms ease-in 200ms;
-  transition: width 200ms ease-in, padding 200ms ease-out, border-radius 200ms ease-in 200ms;
+  -webkit-transition: width 200ms ease-in, padding 200ms ease-out,
+    border-radius 200ms ease-in 200ms;
+  transition: width 200ms ease-in, padding 200ms ease-out,
+    border-radius 200ms ease-in 200ms;
   width: 50px;
   border-radius: 50%;
   font-size: 0;
@@ -421,10 +458,14 @@ html[dir="rtl"] #signin-banner-container2 {
 }
 
 .login__submit.success {
-  -webkit-transition: opacity 0.1s 0.3s, background-color 0.1s 0.3s, -webkit-transform 0.3s 0.1s ease-out;
-  transition: opacity 0.1s 0.3s, background-color 0.1s 0.3s, -webkit-transform 0.3s 0.1s ease-out;
-  transition: transform 0.3s 0.1s ease-out, opacity 0.1s 0.3s, background-color 0.1s 0.3s;
-  transition: transform 0.3s 0.1s ease-out, opacity 0.1s 0.3s, background-color 0.1s 0.3s, -webkit-transform 0.3s 0.1s ease-out;
+  -webkit-transition: opacity 0.1s 0.3s, background-color 0.1s 0.3s,
+    -webkit-transform 0.3s 0.1s ease-out;
+  transition: opacity 0.1s 0.3s, background-color 0.1s 0.3s,
+    -webkit-transform 0.3s 0.1s ease-out;
+  transition: transform 0.3s 0.1s ease-out, opacity 0.1s 0.3s,
+    background-color 0.1s 0.3s;
+  transition: transform 0.3s 0.1s ease-out, opacity 0.1s 0.3s,
+    background-color 0.1s 0.3s, -webkit-transform 0.3s 0.1s ease-out;
   -webkit-transform: scale(30);
   transform: scale(30);
   opacity: 0.9;
