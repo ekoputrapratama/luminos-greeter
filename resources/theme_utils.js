@@ -1,3 +1,7 @@
+var time_language = null,
+  time_format = null,
+  manual_time_format;
+
 class ThemeUtils {
   constructor() {}
   /**
@@ -29,7 +33,7 @@ class ThemeUtils {
     }
 
     try {
-      return _ThemeUtils.dirlist(path, only_images, callback);
+      return dirlist(path, only_images, callback);
     } catch (err) {
       console.error(`[ERROR] theme_utils.dirlist(): ${err}`);
       return callback([]);
@@ -48,7 +52,7 @@ class ThemeUtils {
    * @return {string} The current localized time.
    */
   get_current_localized_time() {
-    if (null === time_language) {
+    if (time_language === null) {
       let config = greeter_config.greeter,
         manual_language =
           "" !== config.time_language && "auto" !== config.time_language,
@@ -66,6 +70,7 @@ class ThemeUtils {
     }
 
     let local_time = moment().format(time_format);
+    let localized_invalid_date = "Invalid Date";
 
     if (local_time === localized_invalid_date) {
       local_time = moment().format("LT");
@@ -73,4 +78,8 @@ class ThemeUtils {
 
     return local_time;
   }
+}
+
+if (typeof theme_utils === "undefined") {
+  theme_utils = new ThemeUtils();
 }
