@@ -1,22 +1,25 @@
 using Gee;
 using JS;
-using WebkitGtkGreeter.JSUtils;
+using LuminosGreeter.JSUtils;
+using LuminosGreeter.Utility;
 
-namespace WebkitGtkGreeter {
+namespace LuminosGreeter {
 
-	public class ConfigManager : GLib.Object {
+	public class ConfigManager {
 
-		private Gee.Map<string, string> description; // allow optional commenting config entrys.
-		public string used_config_path;
-		unowned ClassDefinition cmgr_def;
 		private static unowned JS.Object? conf = null;
-		unowned JS.Context context = null;
+		private static string? config_type = null;
+		private static ArrayList<string>? conf_extensions = null;
 
-		public ConfigManager.with_path(string path) {
+		private unowned ClassDefinition cmgr_def;
+		private unowned JS.Context context = null;
 
-		}
-		public ConfigManager.with_js_context(unowned JS.Context ctx) {
+		public ConfigManager.with_js_context(JS.Context ctx) {
 			context = ctx;
+			conf_extensions = new ArrayList<string>();
+			conf_extensions.add("conf");
+			conf_extensions.add("bg");
+			conf_extensions.add("theme");
 		}
 		public ConfigManager() {
 
@@ -57,9 +60,6 @@ namespace WebkitGtkGreeter {
 
 			unowned JS.Object remove_key_fun = context.make_function(new JS.String.with_utf8_c_string("removeKey"), remove_key);
 			obj.set_property(context, new JS.String.with_utf8_c_string("removeKey"), remove_key_fun, JS.PropertyAttribute.ReadOnly);
-
-			//  unowned JS.Object load_file_fun = context.make_function(new JS.String.with_utf8_c_string("loadFile"), load_file);
-			//  obj.set_property(context, new JS.String.with_utf8_c_string("loadFile"), load_file_fun, JS.PropertyAttribute.ReadOnly);
 
 			unowned JS.Object read_fun = context.make_function(new JS.String.with_utf8_c_string("read"), read);
 			obj.set_property(context, new JS.String.with_utf8_c_string("read"), read_fun, JS.PropertyAttribute.ReadOnly);
@@ -114,7 +114,7 @@ namespace WebkitGtkGreeter {
 				                  JS.PropertyAttribute.None);
 
 			} catch(JSApiError e) {
-				critical(e.message);
+				critical("Error when parsing arguments to Variant : %s", e.message);
 				exception = create_exception(ctx, "Argument %d: %s".printf(1, e.message));
 			}
 			return JS.Value.undefined(ctx);
@@ -126,7 +126,7 @@ namespace WebkitGtkGreeter {
 		                                           JS.Value[] args,
 		                                           out unowned JS.Value? exception) {
 			exception = null;
-			try{
+			try {
 				var section = variant_from_value(ctx, args[0]);
 				debug("has_section function called : %s", section.get_string());
 				unowned JS.Value val = o_get_object(ctx, conf, section.get_string());
@@ -134,13 +134,11 @@ namespace WebkitGtkGreeter {
 				debug("result : %s", result.to_string());
 				return JS.Value.boolean(ctx, result);
 			} catch(JSApiError e) {
-				error(e.message);
+				critical("Error when parsing arguments to Variant : %s", e.message);
 				exception = create_exception(ctx, "Argument %d: %s".printf(1, e.message));
 			}
 			return JS.Value.boolean(ctx, false);
 		}
-
-
 
 		public static unowned JS.Value has_key(JS.Context ctx,
 		                                       JS.Object function,
@@ -167,7 +165,7 @@ namespace WebkitGtkGreeter {
 				debug("has_key result : %s", result.to_string());
 				return JS.Value.boolean(ctx, result);
 			} catch(JSApiError e) {
-				critical(e.message);
+				critical("Error when parsing arguments to Variant : %s", e.message);
 				exception = create_exception(ctx, "Argument %d: %s".printf(1, e.message));
 			}
 			return JS.Value.boolean(ctx, false);
@@ -178,6 +176,7 @@ namespace WebkitGtkGreeter {
 		                                     JS.Object thisObject,
 		                                     JS.Value[] args,
 		                                     out unowned JS.Value exception) {
+			exception = null;
 			return conf.get_property(ctx, (JS.String)args[0]);
 		}
 
@@ -186,7 +185,7 @@ namespace WebkitGtkGreeter {
 		                                        JS.Object thisObject,
 		                                        JS.Value[] args,
 		                                        out unowned JS.Value exception) {
-
+			exception = null;
 			return get_js_property_names(ctx, conf);
 		}
 
@@ -195,19 +194,22 @@ namespace WebkitGtkGreeter {
 		                                   JS.Object thisObject,
 		                                   JS.Value[] args,
 		                                   out unowned JS.Value exception) {
-			var section_variant = variant_from_value(ctx, args[0]);
-			var key_variant = variant_from_value(ctx, args[1]);
-			var value_variant = variant_from_value(ctx, args[2]);
+			exception = null;
+			try {
+				var section_variant = variant_from_value(ctx, args[0]);
+				var key_variant = variant_from_value(ctx, args[1]);
 
-			string key_name = key_variant.get_string();
-			string section_name = section_variant.get_string();
-			string val = value_variant.get_string();
+				string key_name = key_variant.get_string();
+				string section_name = section_variant.get_string();
 
-			unowned JS.Object section = o_get_object(ctx, conf, section_name);
-			section.set_property(ctx,
-			                     new JS.String.with_utf8_c_string(key_name),
-			                     args[2],
-			                     JS.PropertyAttribute.None);
+				unowned JS.Object section = o_get_object(ctx, conf, section_name);
+				section.set_property(ctx,
+				                     new JS.String.with_utf8_c_string(key_name),
+				                     args[2],
+				                     JS.PropertyAttribute.None);
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments to Variant : %s", e.message);
+			}
 			return JS.Value.undefined(ctx);
 		}
 
@@ -216,56 +218,40 @@ namespace WebkitGtkGreeter {
 		                                   JS.Object thisObject,
 		                                   JS.Value[] args,
 		                                   out unowned JS.Value exception) {
-			var section_variant = variant_from_value(ctx, args[0]);
-			var key_variant = variant_from_value(ctx, args[1]);
-			var value_variant = variant_from_value(ctx, args[2]);
+			exception = null;
+			try {
+				var section_variant = variant_from_value(ctx, args[0]);
+				var key_variant = variant_from_value(ctx, args[1]);
 
-			string key_name = key_variant.get_string();
-			string section_name = section_variant.get_string();
-			string val = value_variant.get_string();
+				string key_name = key_variant.get_string();
+				string section_name = section_variant.get_string();
 
-			unowned JS.Object section = o_get_object(ctx, conf, section_name);
-			if(section.is_null(ctx) || section.is_undefined(ctx)) {
-				return JS.Value.undefined(ctx);
+				unowned JS.Object section = o_get_object(ctx, conf, section_name);
+				if(section.is_null(ctx) || section.is_undefined(ctx)) {
+					return JS.Value.undefined(ctx);
+				}
+				return section.get_property(ctx, new JS.String.with_utf8_c_string(key_name));
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments to Variant : %s", e.message);
 			}
-			return section.get_property(ctx, new JS.String.with_utf8_c_string(key_name));
+			return JS.Value.undefined(ctx);
 		}
 
-		//  public string get_string(string section_name, string name) {
-		//  	var section = config.get(section_name);
-		//  	return section.get(name);
-
-		//  }
-
-		//  public int get_int(string section_name, string name) {
-		//  	var section = config.get(section_name);
-		//  	string val = section.get(name);
-		//  	var regex = new Regex("^-{0,1}\\d+$");
-		//  	if(regex.match(val)) {
-		//  		message("value is a valid number");
-		//  		return int.parse(val);
-		//  	}
-		//  	return 0;
-		//  }
-
-		//  public float get_float(string section_name, string name) {
-		//  	var section = config.get(section_name);
-		//  	string val = section.get(name);
-		//  	var regex = new Regex("^\\d+\\.\\d+$");
-		//  	if(regex.match(val)) {
-		//  		message("value is a valid number");
-		//  		return float.parse(val);
-		//  	}
-		//  	return 0;
-		//  }
 		public static unowned JS.Value remove_section(JS.Context ctx,
 		                                              JS.Object function,
 		                                              JS.Object thisObject,
 		                                              JS.Value[] args,
 		                                              out unowned JS.Value exception) {
-			var section_name = variant_from_value(ctx, args[0]).get_string();
-			conf = remove_property(ctx, conf, section_name);
-			return JS.Value.boolean(ctx, !has_property(ctx, conf, section_name));
+			exception = null;
+			try {
+				var section_name = variant_from_value(ctx, args[0]).get_string();
+				conf = remove_property(ctx, conf, section_name);
+				return JS.Value.boolean(ctx, !has_property(ctx, conf, section_name));
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments to Variant : %s", e.message);
+				exception = create_exception(ctx, "Invalid arguments passed : %s".printf(e.message));
+			}
+			return JS.Value.undefined(ctx);
 		}
 
 		public static unowned JS.Value remove_key(JS.Context ctx,
@@ -273,202 +259,194 @@ namespace WebkitGtkGreeter {
 		                                          JS.Object thisObject,
 		                                          JS.Value[] args,
 		                                          out unowned JS.Value exception) {
+			exception = null;
 			debug("remove_key function called");
-			var section_name = variant_from_value(ctx, args[0]).get_string();
-			var key_name = variant_from_value(ctx, args[1]).get_string();
+			try {
+				var section_name = variant_from_value(ctx, args[0]).get_string();
+				var key_name = variant_from_value(ctx, args[1]).get_string();
 
-			unowned JS.Object section = o_get_object(ctx, conf, section_name);
-			section = remove_property(ctx, section, key_name);
-			conf.set_property(ctx, new JS.String(section_name), section);
-			return JS.Value.boolean(ctx, !has_property(ctx, section, key_name));
-		}
-
-		private static string get_file_extension(string basename) {
-			debug("get_file_extension: %s", basename);
-			var regex = new Regex("\\.([0-9a-z]+)$");
-			string[] result = regex.split(basename);
-			if(result.length > 1) {
-				debug("file extension: %s", result[1]);
-				return result[1];
+				unowned JS.Object section = o_get_object(ctx, conf, section_name);
+				section = remove_property(ctx, section, key_name);
+				conf.set_property(ctx, new JS.String(section_name), section);
+				return JS.Value.boolean(ctx, !has_property(ctx, section, key_name));
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments to Variant : %s", e.message);
+				exception = create_exception(ctx, "Invalid arguments passed : %s".printf(e.message));
 			}
-			return null;
+			return JS.Value.undefined(ctx);
 		}
+
+
 
 		public static unowned JS.Value read(JS.Context ctx,
 		                                    JS.Object function,
 		                                    JS.Object thisObject,
 		                                    JS.Value[] args,
 		                                    out unowned JS.Value exception) {
-			var path = variant_from_value(ctx, args[0]).get_string();
-			var file = File.new_for_path(path);
-			if(file.query_exists()) {
-				var extension = get_file_extension(file.get_basename());
-				if(extension == "json") {
-					var text = new StringBuilder();
-					try {
-						var dis = new DataInputStream(file.read());
-						string line = null;
-						while((line = dis.read_line(null, null)) != null) {
-							text.append(line);
-							text.append_c('\n');
+			exception = null;
+			try {
+				var path = variant_from_value(ctx, args[0]).get_string();
+				var file = File.new_for_path(path);
+				if(file.query_exists()) {
+					var extension = get_file_extension(file.get_basename());
+					if(extension == "json") {
+						config_type = extension;
+						var text = new StringBuilder();
+						try {
+							var dis = new DataInputStream(file.read());
+							string line = null;
+							while((line = dis.read_line(null, null)) != null) {
+								text.append(line);
+								text.append_c('\n');
+							}
+						} catch(Error e) {
+							error(e.message);
 						}
-					} catch(Error e) {
-						error(e.message);
-					}
-					unowned JS.Value cfg = object_from_JSON(ctx, text.str);
-					conf = cfg.to_object(ctx, exception);
-					return cfg;
-				} else if(extension == "conf") {
-					unowned JS.Object config = ctx.make_object();
-					try {
-						// Open file for reading and wrap returned FileInputStream into a
-						// DataInputStream, so we can read line by line
+						unowned JS.Value cfg = object_from_JSON(ctx, text.str);
+						conf = cfg.to_object(ctx, exception);
+						return cfg;
+					} else if(conf_extensions.contains(extension)) {
+						config_type = extension;
+						unowned JS.Object config = ctx.make_object();
+						try {
+							// Open file for reading and wrap returned FileInputStream into a
+							// DataInputStream, so we can read line by line
 
-						var in_stream = new DataInputStream(file.read(null));
-						string line;
-						string[] split;
-						var section = new Regex("^\\[([^\\]]+)]$");
-						var comment = new Regex("^#.*$");
-						var regex = new Regex("\\s*(.*?)\\s*[=:]\\s*(.*)");
-						unowned JS.Object curSec = null;
-						string section_name = null;
-						// Read lines until end of file (null) is reached
-						while((line = in_stream.read_line(null, null)) != null) {
-							if(comment.match(line) || line.length == 0) {
+							var in_stream = new DataInputStream(file.read(null));
+							string line;
+							string[] split;
+							var section = new Regex("^\\[([^\\]]+)]$");
+							var comment = new Regex("^#.*$");
+							var regex = new Regex("\\s*(.*?)\\s*[=:]\\s*(.*)");
+							unowned JS.Object curSec = null;
+							string section_name = null;
+							// Read lines until end of file (null) is reached
+							while((line = in_stream.read_line(null, null)) != null) {
+								if(comment.match(line) || line.length == 0) {
+									continue;
+								}
+
+								split = regex.split(line);
+								var res = section.split(line);
+								if(res.length > 1) {
+									section_name = res[1];
+									curSec = ctx.make_object();
+									config.set_property(ctx, new JS.String(res[1]), curSec);
+								} else if(curSec == null) {
+									exception = create_exception(ctx, "Missing section header %s".printf(section_name));
+									throw new ConfigManagerException.MISSING_SECTION_HEADER("");
+								} else {
+									res = regex.split(line);
+									if(res.length > 1) {
+										var key = res[1];
+										curSec.set_property(ctx, new JS.String(key), JS.Value.string(ctx, new JS.String(res[2])));
+									} else {
+										exception = create_exception(ctx, "Error when parsing key value in section %s".printf(section_name));
+										throw new ConfigManagerException.PARSE_ERROR("");
+									}
+								}
+							}
+						} catch(GLib.IOError e) {
+							error("%s", e.message);
+						} catch(RegexError e) {
+							error("%s", e.message);
+						} catch(GLib.Error e) {
+							error("%s", e.message);
+						}
+						conf = config;
+						return config;
+					}
+				} else {
+					debug("file doesn't exists %s", path);
+				}
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments to Variant : %s", e.message);
+				exception = create_exception(ctx, "Invalid arguments passed : %s".printf(e.message));
+			}
+			return JS.Value.undefined(ctx);
+		}
+
+		public static unowned JS.Value write(JS.Context ctx,
+		                                     JS.Object function,
+		                                     JS.Object thisObject,
+		                                     JS.Value[] args,
+		                                     out unowned JS.Value exception) {
+			exception = null;
+			try {
+				var path = variant_from_value(ctx, args[0]).get_string();
+				var file = File.new_for_path(path);
+				switch(config_type) {
+				case "json":
+					try {
+						//Create a new file with this name
+						var file_stream = file.create(FileCreateFlags.NONE);
+
+						// Test for the existence of file
+						if(!file.query_exists()) {
+							critical("Error when writing config file. File doesn't exists");
+							exception = create_exception(ctx, "Error when writing config file. File doesn't exists");
+							return JS.Value.undefined(ctx);
+						}
+						// Write text data to file
+						var data_stream = new DataOutputStream(file_stream);
+
+						data_stream.put_string(utf8_string(conf.to_JSON(ctx, 2, null)));
+					} catch(GLib.IOError e) {
+						//  return -1;
+					} catch(GLib.Error e) {
+						//  return -1;
+					}
+					break;
+				case "conf":
+					string[] sections = get_property_names(ctx, conf);
+					try {
+						//Create a new file with this name
+						var file_stream = file.create(FileCreateFlags.REPLACE_DESTINATION);
+
+						// Test for the existence of file
+						if(!file.query_exists()) {
+							critical("Error when writing config file. File doesn't exists");
+							exception = create_exception(ctx, "Error when writing config file. File doesn't exists");
+							return JS.Value.undefined(ctx);
+						}
+
+						// Write text data to file
+						var data_stream = new DataOutputStream(file_stream);
+
+						for(var i = 0; i < sections.length; i++) {
+							string section_name = sections[i];
+							data_stream.put_string("[" + section_name + "]");
+							unowned JS.Object s = o_get_object(ctx, conf, section_name);
+							if(s.is_null(ctx) || s.is_undefined(ctx)) {
 								continue;
 							}
 
-							split = regex.split(line);
-							var res = section.split(line);
-							if(res.length > 1) {
-								section_name = res[1];
-								curSec = ctx.make_object();
-								config.set_property(ctx, new JS.String(res[1]), curSec);
-							} else if(curSec == null) {
-								throw new ConfigManagerException.MISSING_SECTION_HEADER("");
-							} else {
-								res = regex.split(line);
-								if(res.length > 1) {
-									var key = res[1];
-									curSec.set_property(ctx, new JS.String(key), JS.Value.string(ctx, new JS.String(res[2])));
-								} else {
-									error("parse error");
-									throw new ConfigManagerException.PARSE_ERROR("");
+
+							string[] keys = get_property_names(ctx, s);
+							for(var j = 0; j < keys.length; j++) {
+								string key = keys[j];
+								unowned JS.Value val = s.get_property(ctx, new JS.String.with_utf8_c_string(key));
+								if(val.is_null(ctx) || val.is_undefined(ctx)) {
+									continue;
 								}
+								string v = variant_from_value(ctx, val).get_string();
+								data_stream.put_string(key + "=" + v);
 							}
 						}
 					} catch(GLib.IOError e) {
-						error("%s", e.message);
-					} catch(RegexError e) {
-						error("%s", e.message);
+						critical("Error when writing config file: %s", e.message);
+						exception = create_exception(ctx, "Error when writing config file : %s".printf(e.message));
 					} catch(GLib.Error e) {
-						error("%s", e.message);
+						critical("Error when writing config file: %s", e.message);
+						exception = create_exception(ctx, "Error when writing config file : %s".printf(e.message));
 					}
-					conf = config;
-					return config;
+					break;
 				}
-			} else {
-				debug("file doesn't exists");
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments to Variant : %s", e.message);
+				exception = create_exception(ctx, "Invalid arguments passed : %s".printf(e.message));
 			}
-
 			return JS.Value.undefined(ctx);
-		}
-
-		public unowned JS.Value write(JS.Context ctx,
-		                              JS.Object function,
-		                              JS.Object thisObject,
-		                              JS.Value[] args,
-		                              out unowned JS.Value exception) {
-
-			var path = variant_from_value(ctx, args[0]).get_string();
-			var file = File.new_for_path(path);
-			//  try {
-			//      //Create a new file with this name
-			//      var file_stream = file.create(FileCreateFlags.NONE);
-
-			//      // Test for the existence of file
-			//      if(!file.query_exists()) {
-			//              stdout.printf("Can't create config file.\n");
-			//              return -1;
-			//      }
-
-			//      // Write text data to file
-			//      var data_stream = new DataOutputStream(file_stream);
-
-			//      foreach(Gee.Map.Entry<string, string> e in this.config.entries) {
-
-			//              if(this.description.has_key(e.key)) {
-			//                      data_stream.put_string("# " + this.description.get(e.key) + "\n");
-			//              }
-
-			//              data_stream.put_string(e.key + " = " + e.value + "\n");
-			//      }
-			//  } // Streams
-			//  catch(GLib.IOError e) { return -1; }
-			//  catch(GLib.Error e) { return -1; }
-			return JS.Value.undefined(ctx);
-		}
-
-		private bool search_config_file(string conffile) {
-			var file = File.new_for_path(conffile);
-			return file.query_exists(null);
-		}
-
-
-		public static unowned JS.Value load_file(JS.Context ctx,
-		                                         JS.Object function,
-		                                         JS.Object thisObject,
-		                                         JS.Value[] args,
-		                                         out unowned JS.Value exception) {
-			var path = variant_from_value(ctx, args[0]).get_string();
-			// A reference to our file
-			var file = File.new_for_path(path);
-			unowned JS.Object config = ctx.make_object();
-			try {
-				// Open file for reading and wrap returned FileInputStream into a
-				// DataInputStream, so we can read line by line
-
-				var in_stream = new DataInputStream(file.read(null));
-				string line;
-				string[] split;
-				var section = new Regex("^\\[([^\\]]+)]$");
-				var comment = new Regex("^#.*$");
-				var regex = new Regex("\\s*(.*?)\\s*[=:]\\s*(.*)");
-				unowned JS.Object curSec = null;
-				string section_name = null;
-				// Read lines until end of file (null) is reached
-				while((line = in_stream.read_line(null, null)) != null) {
-					if(comment.match(line) || line.length == 0) {
-						continue;
-					}
-
-					split = regex.split(line);
-					var res = section.split(line);
-					if(res.length > 1) {
-						section_name = res[1];
-						curSec = ctx.make_object();
-						config.set_property(ctx, new JS.String(res[1]), curSec);
-					} else if(curSec == null) {
-						throw new ConfigManagerException.MISSING_SECTION_HEADER("");
-					} else {
-						res = regex.split(line);
-						if(res.length > 1) {
-							var key = res[1];
-							curSec.set_property(ctx, new JS.String(key), JS.Value.string(ctx, new JS.String(res[2])));
-						} else {
-							error("parse error");
-							throw new ConfigManagerException.PARSE_ERROR("");
-						}
-					}
-				}
-			} catch(GLib.IOError e) {
-				error("%s", e.message);
-			} catch(RegexError e) {
-				error("%s", e.message);
-			} catch(GLib.Error e) {
-				error("%s", e.message);
-			}
-			return config;
 		}
 
 

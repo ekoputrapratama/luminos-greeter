@@ -1,7 +1,16 @@
-using Wnck;
 using Gee;
+using GioUtil;
 
-namespace WebkitGtkGreeter {
+// Defined by CMake build script.
+extern const string _INSTALL_PREFIX;
+extern const string _SOURCE_ROOT_DIR;
+extern const string _BUILD_ROOT_DIR;
+extern const string _EXTENSIONS_DIR;
+extern const string GETTEXT_PACKAGE;
+extern const string APPLICATION_ID;
+
+
+namespace LuminosGreeter {
 	public struct AppOptions {
 		public bool dev;
 		public bool debug;
@@ -9,23 +18,63 @@ namespace WebkitGtkGreeter {
 	}
 
 	public class GreeterApplication : Gtk.Application {
-		WebkitGtkGreeter.Window window;
+
+		public const string INSTALL_PREFIX = _INSTALL_PREFIX;
+		public const string SOURCE_ROOT_DIR = _SOURCE_ROOT_DIR;
+		public const string BUILD_ROOT_DIR = _BUILD_ROOT_DIR;
+		public const string EXTENSIONS_DIR = _EXTENSIONS_DIR;
+
+		// Local-only command line options
+		private const string OPTION_VERSION = "version";
+
+		private const string OPTION_DEBUG = "debug";
+
+		private const GLib.OptionEntry[] OPTION_ENTRIES = {
+			{ OPTION_DEBUG, 'd', 0, GLib.OptionArg.NONE, ref do_debug,
+				/// Command line option
+			  "Print debug logging", null }
+		};
+		LuminosGreeter.Window window;
 		AppOptions options;
 		ConfigReader config_rdr;
+		private static bool do_debug;
+		private static GreeterApplication _instance = null;
+		/**
+		 * Determines if this instance is running from the install directory.
+		 */
+		internal bool is_installed {
+			get {
+				return this.exec_dir.has_prefix(this.install_prefix);
+			}
+		}
+		/** Returns the compile-time configured installation directory. */
+		internal GLib.File install_prefix {
+			get; private set; default = GLib.File.new_for_path(INSTALL_PREFIX);
+		}
+		public static GreeterApplication instance {
+			get { return _instance; }
+			private set {
+				// Ensure singleton behavior.
+				assert(_instance == null);
+				_instance = value;
+			}
+		}
+
+		private File exec_dir;
+		private string binary;
 
 		public GreeterApplication(AppOptions opts) {
-			Object(application_id: Constants.APPLICATION_ID, flags: ApplicationFlags.FLAGS_NONE);
+			Object(application_id: APPLICATION_ID, flags: ApplicationFlags.FLAGS_NONE);
 			this.options = opts;
-			this.config_rdr = new ConfigReader(Constants.CONF_DIR + "/lightdm-webkit2-greeter.conf");
-			//  Bus.own_name(BusType.SESSION, "io.github.webkit2gtk-greeter.ConfigManager", BusNameOwnerFlags.NONE,
-			//               config_mgr.on_bus_aquired, null, () => { warning("Could not aquire name"); });
+			this.config_rdr = new ConfigReader(Constants.CONF_DIR + Path.DIR_SEPARATOR_S + "lightdm-webkit2-greeter.conf");
+
+			_instance = this;
 		}
 
 		public override void activate() {
-			window = new WebkitGtkGreeter.Window(options);
+			window = new LuminosGreeter.Window(this);
 			add_window(window);
 
-			// TODO : load active theme based on configuration
 			debug("getting configuration");
 			Map<string, string> greeter_setting = config_rdr.get_section("greeter");
 
@@ -38,14 +87,27 @@ namespace WebkitGtkGreeter {
 				url = get_theme_url(theme_name);
 			}
 
-			if(options.dev) {
-				var destination = File.new_for_path("data/themes/default/index.html");
-				string path = "file://" + destination.get_path();
-				debug("theme path: %s\n", path);
-				url = path;
-			}
+			//  if(!is_installed) {
+			//  	var destination = File.new_for_path("data/themes/default/index.html");
+			//  	string path = "file://" + destination.get_path();
+			//  	debug("theme path: %s\n", path);
+			//  	url = path;
+			//  }
 
 			window.load(url, options.debug);
+		}
+
+		/**
+		 * Returns the directory containing the application's WebExtension libs.
+		 *
+		 * When running from the installation prefix, this will be based
+		 * on the Meson `libdir` option, and can be set by invoking `meson
+		 * configure` as appropriate.
+		 */
+		public GLib.File get_extensions_dir() {
+			return (is_installed)
+			       ? GLib.File.new_for_path(EXTENSIONS_DIR)
+			       : GLib.File.new_for_path(BUILD_ROOT_DIR).get_child("extensions");
 		}
 
 		private string get_theme_url(string name) {
@@ -68,17 +130,17 @@ namespace WebkitGtkGreeter {
 			var dir = File.new_for_path(path);
 
 			debug("checking theme path %s", path);
-			if(dir.query_exists() && dir.query_file_type(0) == FileType.DIRECTORY) {
+			if(dir.query_exists() && is_directory(dir)) {
 				debug("theme folder exists, checking theme description file");
 				var config_path = path + Path.DIR_SEPARATOR_S + "index.theme";
 				var file = File.new_for_path(config_path);
 				if(file.query_exists()) {
-					Map<string, Map<string, string> > theme_setting = config_rdr.load_config_file(config_path);
-					Map<string, string> config = theme_setting.get("theme");
-					string index_path = config.get("url");
+					Map<string, Map<string, string> > theme_definition = config_rdr.load_config_file(config_path);
+					Map<string, string> def = theme_definition.get("theme");
+					string index_path = def.get("url");
 
 					bool is_absolute = Path.is_absolute(index_path);
-					debug("is_absolute url %s", is_absolute.to_string());
+					debug("theme provide absolute url %s", is_absolute.to_string());
 
 					if(!is_absolute)
 						index_path = path + Path.DIR_SEPARATOR_S + index_path;
