@@ -1,49 +1,41 @@
-using WebKit;
-using JS;
-using GLib;
-using Gtk;
-using WebkitGtkGreeter.JSUtils;
-using LightDM;
-using Gee;
 
-namespace WebkitGtkGreeter {
-	JSApi jsapi = null;
-	private LightDM.Greeter lightdm_greeter;
-	private unowned LightDM.UserList lightdm_user_list;
-	public bool test_mode = false;
-	private unowned JS.Object? lightdm_obj;
+using JS;
+using Gee;
+using Gtk;
+using WebKit;
+using LightDM;
+using LuminosGreeter.JSUtils;
+using LuminosGreeter.Utility;
+
+
+namespace LuminosGreeter {
+	public struct BackgroundDefinition {
+		string name;
+		string url;
+		string description;
+	}
+	public struct Background {
+		bool webgl;
+		string path;
+		string image;
+	}
 
 	public class JSApi : GLib.Object {
 		public signal void on_string_callback();
-		private DesktopFileReader desktop_reader;
 		private unowned JS.Context? context = null;
+		private static LightDM.Greeter lightdm_greeter;
+		private unowned LightDM.UserList lightdm_user_list;
 
-		construct {
-
-		}
 		public JSApi() {
 			lightdm_greeter = new LightDM.Greeter();
 			lightdm_user_list = LightDM.UserList.get_instance();
-			desktop_reader = new DesktopFileReader();
 
 			lightdm_greeter.show_message.connect(show_message);
 			lightdm_greeter.show_prompt.connect(show_prompt);
 
 			lightdm_greeter.authentication_complete.connect(authentication_complete);
 
-			lightdm_greeter.notify["has-guest-account-hint"].connect(() => {
-				//  if (lightdm_greeter.has_guest_account_hint && guest_login_button.parent == null) {
-				//      extra_login_grid.attach (guest_login_button, 0, 0);
-				//      guest_login_button.show ();
-				//  }
-			});
 
-			lightdm_greeter.notify["show-manual-login-hint"].connect(() => {
-				//  if (lightdm_greeter.show_manual_login_hint && manual_login_button.parent == null) {
-				//      extra_login_grid.attach (manual_login_button, 1, 0);
-				//      manual_login_button.show ();
-				//  }
-			});
 			var connected = false;
 			try {
 				connected = lightdm_greeter.connect_to_daemon_sync();
@@ -51,7 +43,7 @@ namespace WebkitGtkGreeter {
 				warning("Failed to connect to LightDM daemon: %s", e.message);
 			}
 
-			if(!connected && !test_mode)
+			if(!connected)
 				Posix.exit(Posix.EXIT_FAILURE);
 		}
 
@@ -88,16 +80,65 @@ namespace WebkitGtkGreeter {
 			context.evaluate_script(script);
 		}
 
+		private void show_prompt(string text, LightDM.PromptType type = LightDM.PromptType.QUESTION) {
+			debug("prompt: `%s' (%d)", text, type);
+
+			unowned JS.Object global = context.get_global_object();
+			unowned JS.Value lighdm_val = global.get_property(context, new JS.String("lightdm"));
+			unowned JS.Object obj = lighdm_val.to_object(context, null);
+			unowned JS.Value val = obj.get_property(context, new JS.String("onShowPrompt"));
+			void*[] params = {to_js_string(context, text)};
+
+			string type_str = "";
+			if(type == LightDM.PromptType.SECRET) {
+				type_str = "password";
+				params += JS.Value.number(context, 1);
+			} else if(type == LightDM.PromptType.QUESTION) {
+				type_str = "question";
+				params += JS.Value.number(context, 0);
+			}
+
+			if(!is_null_or_undefined(context, val)) {
+				unowned JS.Object fun = val.to_object(context);
+				if(fun.is_function(context)) {
+					fun.call_as_function(context, fun, (JS.Value[]) params, null);
+				}
+			}
+
+			// compatibility with antergos web-greeter
+			JS.String script = new JS.String("if(typeof show_prompt === 'function') show_prompt('" + text + "','" + type_str + "');");
+			context.evaluate_script(script);
+		}
+
 		private void show_message(string text, LightDM.MessageType type) {
 			critical("message: `%s' (%d)", text, type);
-			JS.String script = new JS.String("if(typeof show_message === 'function') show_message('" + text + "');");
+
+			unowned JS.Object global = context.get_global_object();
+			unowned JS.Value lighdm_val = global.get_property(context, new JS.String("lightdm"));
+			unowned JS.Object obj = lighdm_val.to_object(context, null);
+			unowned JS.Value val = obj.get_property(context, new JS.String("onShowMessage"));
+			void*[] params = {to_js_string(context, text)};
+
+			string type_str = "";
+
+			if(type == LightDM.MessageType.INFO) {
+				type_str = "info";
+				params += JS.Value.number(context, 0);
+			} else if(type == LightDM.MessageType.ERROR) {
+				type_str = "error";
+				params += JS.Value.number(context, 1);
+			}
+
+			if(!is_null_or_undefined(context, val)) {
+				unowned JS.Object fun = val.to_object(context);
+				if(fun.is_function(context)) {
+					fun.call_as_function(context, fun, (JS.Value[]) params, null);
+				}
+			}
+
+			// compatibility with antergos web-greeter
+			JS.String script = new JS.String("if(typeof show_message === 'function') show_message('" + text + "','" + type_str + "');");
 			context.evaluate_script(script);
-			/*var messagetext = string_to_messagetext(text);
-			   if (messagetext == MessageText.FPRINT_SWIPE || messagetext == MessageText.FPRINT_PLACE) {
-			    // For the fprint module, there is no prompt message from PAM.
-			    send_prompt (PromptType.FPRINT);
-			   }
-			   current_login.show_message (type, messagetext, text);*/
 		}
 		public string? get_default_session()
 		{
@@ -153,22 +194,144 @@ namespace WebkitGtkGreeter {
 			return session;
 		}
 
-		private void show_prompt(string text, LightDM.PromptType type = LightDM.PromptType.QUESTION) {
-			critical("prompt: `%s' (%d)", text, type);
-			/*send_prompt (lightdm_prompttype_to_prompttype(type), string_to_prompttext(text), text);
-			   had_prompt = true;
-			   current_login.show_prompt (type, prompttext, text);*/
-			//  if (current_card is ManualCard) {
-			//    if (type == LightDM.PromptType.SECRET) {
-			//        ((ManualCard) current_card).ask_password ();
-			//    } else {
-			//        ((ManualCard) current_card).wrong_username ();
-			//    }
-			//  }
-		}
 
 		public void on_page_created(WebKit.WebExtension extension, WebKit.WebPage page) {
 			debug("page-created");
+			WebKit.Frame frame = page.get_main_frame();
+			context = (JS.GlobalContext)frame.get_javascript_global_context();
+			lightdm_greeter.notify["has-guest-account-hint"].connect(() => {
+				debug("has_guest_account_hint changed");
+				unowned JS.Object global = context.get_global_object();
+				unowned JS.Value lighdm_val = global.get_property(context, new JS.String("lightdm"));
+				if(!is_null_or_undefined(context, lighdm_val)) {
+				        unowned JS.Object obj = lighdm_val.to_object(context, null);
+
+				        obj.set_property(context,
+				                         new JS.String.with_utf8_c_string("has_guest_account"),
+				                         JS.Value.boolean(context, lightdm_greeter.has_guest_account_hint),
+				                         JS.PropertyAttribute.None);
+				}
+			});
+		}
+
+		public static unowned JS.Value bglist(JS.Context ctx,
+		                                      JS.Object function,
+		                                      JS.Object thisObject,
+		                                      JS.Value[] args,
+		                                      out unowned JS.Value exception) {
+			exception = null;
+			ArrayList<string> accepted_images = new ArrayList<string>();
+			accepted_images.add("png");
+			accepted_images.add("jpg");
+			accepted_images.add("jpeg");
+
+			try {
+				var path = variant_from_value(ctx, args[0]).get_string();
+				var dir = File.new_for_path(path);
+				string[] folders = {};
+				void*[] paths = {};
+
+				var enumerator = dir.enumerate_children(FileAttribute.STANDARD_NAME, 0);
+				FileInfo info;
+				while((info = enumerator.next_file()) != null) {
+					var p = path + Path.DIR_SEPARATOR_S + info.get_name();
+					if(is_directory_info(info)) {
+						if(is_html_bg(p)) {
+
+						} else {
+							folders += p;
+						}
+					} else {
+						var ext = get_file_extension(info.get_name());
+						if(accepted_images.contains(ext)) {
+							paths += JS.Value.string(ctx, new JS.String(p));
+						}
+					}
+				}
+
+				for(var i = 0; i < folders.length; i++) {
+					path = folders[i];
+					dir = File.new_for_path(path);
+					enumerator = dir.enumerate_children(FileAttribute.STANDARD_NAME, 0);
+
+					while((info = enumerator.next_file()) != null) {
+						var p = path + Path.DIR_SEPARATOR_S + info.get_name();
+						if(is_directory_info(info)) {
+							if(is_html_bg(p)) {
+
+							} else {
+								folders += p;
+							}
+						} else {
+							var ext = get_file_extension(info.get_name());
+							if(accepted_images.contains(ext)) {
+								paths += JS.Value.string(ctx, new JS.String(p));
+							}
+						}
+					}
+				}
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments value to Variant : %s", e.message);
+			} catch(Error e) {
+				critical("Error when enumerating directory content : %s", e.message);
+			}
+			return JS.Value.undefined(ctx);
+		}
+
+		public static unowned JS.Value dirlist(JS.Context ctx,
+		                                       JS.Object function,
+		                                       JS.Object thisObject,
+		                                       JS.Value[] args,
+		                                       out unowned JS.Value exception) {
+
+			exception = null;
+			ArrayList<string> accepted_images = new ArrayList<string>();
+			accepted_images.add("png");
+			accepted_images.add("jpg");
+			accepted_images.add("jpeg");
+			try {
+				var path = variant_from_value(ctx, args[0]).get_string();
+				var dir = File.new_for_path(path);
+				string[] folders = {};
+				void*[] paths = {};
+
+				var enumerator = dir.enumerate_children(FileAttribute.STANDARD_NAME, 0);
+				FileInfo info;
+				while((info = enumerator.next_file()) != null) {
+					var p = path + Path.DIR_SEPARATOR_S + info.get_name();
+					if(is_directory_info(info)) {
+						folders += p;
+					} else {
+						var ext = get_file_extension(info.get_name());
+						if(accepted_images.contains(ext)) {
+							paths += JS.Value.string(ctx, new JS.String(p));
+						}
+					}
+				}
+
+				for(var i = 0; i < folders.length; i++) {
+					path = folders[i];
+					dir = File.new_for_path(path);
+					enumerator = dir.enumerate_children(FileAttribute.STANDARD_NAME, 0);
+
+					while((info = enumerator.next_file()) != null) {
+						var p = path + Path.DIR_SEPARATOR_S + info.get_name();
+						if(is_directory_info(info)) {
+							folders += p;
+						} else {
+							paths += JS.Value.string(ctx, new JS.String(p));
+						}
+					}
+				}
+
+				unowned JS.Object arr = ctx.make_array((JS.Value[])paths, null);
+				return arr;
+			} catch(JSApiError e) {
+				critical("Error when parsing arguments value to Variant : %s", e.message);
+			} catch(Error e) {
+				critical("Error when enumerating directory content : %s", e.message);
+			}
+			return JS.Value.undefined(ctx);
 		}
 
 		public void on_window_object_cleared(ScriptWorld world, WebPage page, WebKit.Frame frame) {
@@ -178,18 +341,47 @@ namespace WebkitGtkGreeter {
 			this.context = context;
 
 			setup_global_variables(context);
+			setup_global_functions(context);
 			setup_lightdm_object(context);
 		}
 
-		private void setup_global_variables(unowned JS.Context context) {
-			debug("setup_global_variables");
-
+		private void setup_global_functions(JS.Context context) {
 			unowned JS.Object global = context.get_global_object();
-			JS.Value? exception;
+			JS.Value exception;
 
+			unowned JS.Value fun = global.get_property(context, new JS.String.with_utf8_c_string("dirlist"), out exception);
+			if(is_null_or_undefined(context, fun)) {
+				debug("adding dirlist function");
+				unowned JS.Object dirlistFun = context.make_function(new JS.String.with_utf8_c_string("dirlist"), dirlist);
+				global.set_property(context,
+				                    new JS.String.with_utf8_c_string("dirlist"),
+				                    dirlistFun,
+				                    JS.PropertyAttribute.ReadOnly);
+			}
+		}
+
+		private void setup_global_variables(JS.Context context) {
+			debug("setup_global_variables");
+			unowned JS.Object global = context.get_global_object();
 			global.set_property(context,
 			                    new JS.String.with_utf8_c_string("CONFIG_DIR"),
 			                    to_js_string(context, Constants.CONF_DIR),
+			                    JS.PropertyAttribute.ReadOnly);
+			global.set_property(context,
+			                    new JS.String.with_utf8_c_string("THEMES_DIR"),
+			                    to_js_string(context, Constants.THEMES_DIR),
+			                    JS.PropertyAttribute.ReadOnly);
+			global.set_property(context,
+			                    new JS.String.with_utf8_c_string("DATA_DIR"),
+			                    to_js_string(context, Constants.DATA_DIR),
+			                    JS.PropertyAttribute.ReadOnly);
+			global.set_property(context,
+			                    new JS.String.with_utf8_c_string("PACKAGE_NAME"),
+			                    to_js_string(context, Constants.PACKAGE_NAME),
+			                    JS.PropertyAttribute.ReadOnly);
+			global.set_property(context,
+			                    new JS.String.with_utf8_c_string("VERSION"),
+			                    to_js_string(context, Constants.VERSION),
 			                    JS.PropertyAttribute.ReadOnly);
 		}
 
@@ -260,7 +452,35 @@ namespace WebkitGtkGreeter {
 			return lang;
 		}
 
-		private void setup_lightdm_variables(JS.Context ctx, unowned JS.Object obj, out JS.Value exception = null) {
+		private void setup_lightdm_variables(JS.Context ctx, JS.Object obj, out JS.Value exception = null) {
+			unowned JS.Object promptType = ctx.make_object();
+			promptType.set_property(ctx,
+			                        new JS.String.with_utf8_c_string("QUESTION"),
+			                        JS.Value.number(ctx, 0),
+			                        JS.PropertyAttribute.ReadOnly);
+			promptType.set_property(ctx,
+			                        new JS.String.with_utf8_c_string("SECRET"),
+			                        JS.Value.number(ctx, 1),
+			                        JS.PropertyAttribute.ReadOnly);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("PromptType"),
+			                 promptType,
+			                 JS.PropertyAttribute.ReadOnly);
+
+			unowned JS.Object messageType = ctx.make_object();
+			messageType.set_property(ctx,
+			                         new JS.String.with_utf8_c_string("INFO"),
+			                         JS.Value.number(ctx, 0),
+			                         JS.PropertyAttribute.ReadOnly);
+			messageType.set_property(ctx,
+			                         new JS.String.with_utf8_c_string("ERROR"),
+			                         JS.Value.number(ctx, 1),
+			                         JS.PropertyAttribute.ReadOnly);
+			obj.set_property(ctx,
+			                 new JS.String.with_utf8_c_string("MessageType"),
+			                 messageType,
+			                 JS.PropertyAttribute.ReadOnly);
+
 			obj.set_property(ctx,
 			                 new JS.String.with_utf8_c_string("can_hibernate"),
 			                 JS.Value.boolean(ctx, LightDM.get_can_hibernate()),
@@ -324,7 +544,7 @@ namespace WebkitGtkGreeter {
 
 		}
 
-		private void setup_lightdm_functions(JS.Context context, unowned JS.Object obj, out JS.Value exception = null) {
+		private void setup_lightdm_functions(JS.Context context, JS.Object obj, out JS.Value exception = null) {
 			unowned JS.Value fun = obj.get_property(context, new JS.String.with_utf8_c_string("restart"), out exception);
 			if(is_null_or_undefined(context, fun)) {
 				debug("adding restart function");
@@ -373,6 +593,10 @@ namespace WebkitGtkGreeter {
 				                 new JS.String.with_utf8_c_string("start_authentication"),
 				                 start_auth_fun,
 				                 JS.PropertyAttribute.ReadOnly);
+				obj.set_property(context,
+				                 new JS.String.with_utf8_c_string("authenticate"),
+				                 start_auth_fun,
+				                 JS.PropertyAttribute.ReadOnly);
 			}
 
 			fun = obj.get_property(context, new JS.String.with_utf8_c_string("cancel_authentication"), out exception);
@@ -411,14 +635,17 @@ namespace WebkitGtkGreeter {
 		                                              JS.Object thisObject,
 		                                              JS.Value[] args,
 		                                              out unowned JS.Value exception) {
-			var password = variant_from_value(ctx, args[0]).get_string();
-			if(password != null) {
-				try {
+			exception = null;
+			try {
+				var password = variant_from_value(ctx, args[0]).get_string();
+				if(password != null) {
 					debug("respond password to lightdm");
 					lightdm_greeter.respond(password);
-				} catch(Error e) {
-					critical(e.message);
 				}
+			} catch(JSApiError e) {
+				critical("Error when parsing credential : %s", e.message);
+			} catch(Error e) {
+				critical(e.message);
 			}
 			return JS.Value.undefined(ctx);
 		}
@@ -456,7 +683,7 @@ namespace WebkitGtkGreeter {
 			return obj;
 		}
 
-		private unowned JS.Value load_users(JS.Context ctx) {
+		private unowned JS.Value? load_users(JS.Context ctx) {
 			void*[] params = {};
 			JS.Value? exception;
 
@@ -517,7 +744,7 @@ namespace WebkitGtkGreeter {
 				//      return Source.REMOVE;
 				//  });
 			}
-			return null;
+			return JS.Value.undefined(ctx);
 		}
 
 		public static unowned JS.Value start_authentication(JS.Context ctx,
@@ -527,9 +754,14 @@ namespace WebkitGtkGreeter {
 		                                                    out unowned JS.Value exception) {
 			debug("start_authentication function called");
 			exception = null;
-
-			string username = variant_from_value(ctx, args[0]).get_string();
-			lightdm_greeter.authenticate(username);
+			try {
+				string username = variant_from_value(ctx, args[0]).get_string();
+				lightdm_greeter.authenticate(username);
+			} catch(JSApiError e) {
+				critical("Error when parsing username : %s", e.message);
+			} catch(Error e) {
+				critical("Error when trying to authenticate user : %s", e.message);
+			}
 			return JS.Value.undefined(ctx);
 		}
 
@@ -540,8 +772,11 @@ namespace WebkitGtkGreeter {
 		                                                     out unowned JS.Value exception) {
 			debug("cancel_authentication function called");
 			exception = null;
-
-			lightdm_greeter.cancel_authentication();
+			try {
+				lightdm_greeter.cancel_authentication();
+			} catch(Error e) {
+				critical("Error when trying to cancel authentication : %s", e.message);
+			}
 			return JS.Value.undefined(ctx);
 		}
 
@@ -562,7 +797,12 @@ namespace WebkitGtkGreeter {
 		                                       out unowned JS.Value exception) {
 			debug("restart function called");
 			exception = null;
-			return JS.Value.boolean(ctx, LightDM.restart());
+			try {
+				return JS.Value.boolean(ctx, LightDM.restart());
+			} catch(Error e) {
+				critical("Failed to restart : %s", e.message);
+			}
+			return JS.Value.boolean(ctx, false);
 		}
 
 		public static unowned JS.Value shutdown(JS.Context ctx,
@@ -572,7 +812,12 @@ namespace WebkitGtkGreeter {
 		                                        out unowned JS.Value exception) {
 			debug("shutdown function called");
 			exception = null;
-			return JS.Value.boolean(ctx, LightDM.shutdown());
+			try {
+				return JS.Value.boolean(ctx, LightDM.shutdown());
+			} catch(Error e) {
+				critical("Failed to shutdown : %s", e.message);
+			}
+			return JS.Value.boolean(ctx, false);
 		}
 
 		public static unowned JS.Value hibernate(JS.Context ctx,
@@ -582,7 +827,12 @@ namespace WebkitGtkGreeter {
 		                                         out unowned JS.Value exception) {
 			debug("hibernate function called");
 			exception = null;
-			return JS.Value.boolean(ctx, LightDM.hibernate());
+			try {
+				return JS.Value.boolean(ctx, LightDM.hibernate());
+			} catch(Error e) {
+				critical("Failed to hibernate : %s", e.message);
+			}
+			return JS.Value.boolean(ctx, false);
 		}
 
 		public static unowned JS.Value suspend(JS.Context ctx,
@@ -592,7 +842,12 @@ namespace WebkitGtkGreeter {
 		                                       out unowned JS.Value exception) {
 			debug("suspend function called");
 			exception = null;
-			return JS.Value.boolean(ctx, LightDM.suspend());
+			try {
+				return JS.Value.boolean(ctx, LightDM.suspend());
+			} catch(Error e) {
+				critical("Failed to suspend : %s", e.message);
+			}
+			return JS.Value.boolean(ctx, false);
 		}
 
 	}
@@ -600,8 +855,8 @@ namespace WebkitGtkGreeter {
 
 	[CCode(cname = "G_MODULE_EXPORT webkit_web_extension_initialize", instance_pos = -1)]
 	public void webkit_web_extension_initialize(WebKit.WebExtension extension) {
-		debug("core extension initilalization");
-		jsapi = new JSApi();
+		debug("core extension initialization");
+		var jsapi = new JSApi();
 
 		extension.page_created.connect(jsapi.on_page_created);
 		var scriptWorld = WebKit.ScriptWorld.get_default();
