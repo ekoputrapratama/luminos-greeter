@@ -1,11 +1,8 @@
-project('webkitgtk-greeter','c', 'vala',
+project('luminos-greeter','c', 'vala',
   version: '1.0.0',
   meson_version: '>= 0.40.0',
 )
 
-
-
-# add_global_arguments(am_cflags, language: 'c')
 add_project_arguments(['--vapidir', join_paths(meson.current_source_dir(), 'vapi')],
                       language: 'vala')
 
@@ -16,12 +13,17 @@ reference_tracking = get_option('ref_tracking')
 poodle = get_option('poodle')
 valac = meson.get_compiler('vala')
 
-application_id = 'io.github.webkitgtk-greeter'
+application_id = 'io.github.luminos-greeter'
 config_h_dir = include_directories('.')
+greeter_prefix = get_option('prefix')
+libdir = join_paths(greeter_prefix, get_option('libdir'))
+extensions_dir = join_paths(libdir, 'luminos-greeter', 'extensions')
+datadir = join_paths('/usr', get_option('datadir'), 'lightdm-webkit')
 
 target_gtk = '3.24.7'
 target_glib = '2.2.5'
 target_webkit = '2.20'
+
 
 # Primary deps
 glib = dependency('glib-2.0', version: '>=' + target_glib)
@@ -41,6 +43,7 @@ libwnck = dependency('libwnck-3.0')
 gobject = dependency('gobject-2.0')
 posix = valac.find_library('posix')
 
+
 conf_data = configuration_data()
 conf_data.set_quoted('CONF_DIR', join_paths('/',get_option('sysconfdir'), 'lightdm'))
 conf_data.set_quoted('GETTEXT_PACKAGE', meson.project_name())
@@ -48,14 +51,19 @@ conf_data.set_quoted('G_LOG_DOMAIN', meson.project_name())
 conf_data.set_quoted('PACKAGE_NAME', meson.project_name())
 conf_data.set_quoted('APPLICATION_ID', application_id)
 conf_data.set_quoted('PROJECT_NAME', meson.project_name())
-conf_data.set_quoted('DATA_DIR',join_paths('/usr', get_option('datadir'), 'lightdm-webkit'))
-conf_data.set_quoted('THEMES_DIR',join_paths('/usr', get_option('datadir'), 'lightdm-webkit', 'themes'))
-conf_data.set('VERSION', meson.project_version())
+conf_data.set_quoted('DATA_DIR', datadir)
+conf_data.set_quoted('THEMES_DIR', join_paths(datadir, 'themes'))
+conf_data.set_quoted('_EXTENSIONS_DIR', extensions_dir)
+conf_data.set_quoted('_INSTALL_PREFIX', greeter_prefix)
+conf_data.set_quoted('_BUILD_ROOT_DIR', meson.build_root())
+conf_data.set_quoted('_SOURCE_ROOT_DIR', meson.source_root())
+conf_data.set_quoted('VERSION', meson.project_version())
 
 conf_data.set_quoted('PACKAGE_STRING', '@0@-@1@'.format(meson.project_name(), meson.project_version()))
-conf_data.set('PACKAGE_VERSION', meson.project_version())
+conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
 configure_file(output: 'config.h', configuration: conf_data)
 
+subdir('resources')
 subdir('data')
 subdir('greeter')
 subdir('extensions')
