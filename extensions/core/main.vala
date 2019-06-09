@@ -9,16 +9,6 @@ using LuminosGreeter.Utility;
 
 
 namespace LuminosGreeter {
-	public struct BackgroundDefinition {
-		string name;
-		string url;
-		string description;
-	}
-	public struct Background {
-		bool webgl;
-		string path;
-		string image;
-	}
 
 	public class JSApi : GLib.Object {
 		public signal void on_string_callback();
