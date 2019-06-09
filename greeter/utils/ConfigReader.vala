@@ -1,6 +1,6 @@
 using JS;
 using Gee;
-namespace WebkitGtkGreeter {
+namespace LuminosGreeter {
 
 	public class ConfigReader : GLib.Object {
 		private Gee.Map<string, Gee.TreeMap<string, string> > config;

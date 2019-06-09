@@ -1,6 +1,6 @@
 
 using GLib;
-namespace WebkitGtkGreeter {
+namespace LuminosGreeter {
 
 	static int main(string[] args) {
 		bool do_show_version = false;
@@ -18,30 +18,28 @@ namespace WebkitGtkGreeter {
 
 		debug("Loading command line options");
 		var c = new OptionContext("- Webkit2gtk Greeter");
-		c.add_main_entries(options, "io.github.webkit2gtk-greeter");
+		c.add_main_entries(options, "io.github.luminos-greeter");
 		c.add_group(Gtk.get_option_group(true));
-		try
-		{
+
+		try {
 			c.parse(ref args);
-		}
-		catch(Error e)
-		{
-			stderr.printf("%s\n", e.message);
+		} catch(Error e) {
+			error("%s\n", e.message);
 			/* Text printed out when an unknown command-line argument provided */
-			stderr.printf("Run '%s --help' to see a full list of available command line options.", args[0]);
-			stderr.printf("\n");
+			error("Run '%s --help' to see a full list of available command line options.", args[0]);
 			return Posix.EXIT_FAILURE;
 		}
-		if(do_show_version)
-		{
+
+		if(do_show_version) {
 			/* Note, not translated so can be easily parsed */
 			//  stderr.printf(Constants.GETTEXT_PACKAGE + " %s\n", Constants.VERSION);
 			return Posix.EXIT_SUCCESS;
 		}
 		AppOptions opts = {false};
-		opts.dev = dev;
 		opts.debug = do_debug;
 
-		return new WebkitGtkGreeter.GreeterApplication(opts).run(args);
+		Environment.set_variable("WEBKIT_DISABLE_COMPOSITING_MODE", "1", true);
+		GreeterApplication app = new GreeterApplication(opts);
+		return app.run(args);
 	}
 }
