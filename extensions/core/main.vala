@@ -214,69 +214,6 @@ namespace LuminosGreeter {
 			});
 		}
 
-		public static unowned JS.Value bglist(JS.Context ctx,
-		                                      JS.Object function,
-		                                      JS.Object thisObject,
-		                                      JS.Value[] args,
-		                                      out unowned JS.Value exception) {
-			exception = null;
-			ArrayList<string> accepted_images = new ArrayList<string>();
-			accepted_images.add("png");
-			accepted_images.add("jpg");
-			accepted_images.add("jpeg");
-
-			try {
-				var path = variant_from_value(ctx, args[0]).get_string();
-				var dir = File.new_for_path(path);
-				string[] folders = {};
-				void*[] paths = {};
-
-				var enumerator = dir.enumerate_children(FileAttribute.STANDARD_NAME, 0);
-				FileInfo info;
-				while((info = enumerator.next_file()) != null) {
-					var p = path + Path.DIR_SEPARATOR_S + info.get_name();
-					if(is_directory_info(info)) {
-						if(is_html_bg(p)) {
-
-						} else {
-							folders += p;
-						}
-					} else {
-						var ext = get_file_extension(info.get_name());
-						if(accepted_images.contains(ext)) {
-							paths += JS.Value.string(ctx, new JS.String(p));
-						}
-					}
-				}
-
-				for(var i = 0; i < folders.length; i++) {
-					path = folders[i];
-					dir = File.new_for_path(path);
-					enumerator = dir.enumerate_children(FileAttribute.STANDARD_NAME, 0);
-
-					while((info = enumerator.next_file()) != null) {
-						var p = path + Path.DIR_SEPARATOR_S + info.get_name();
-						if(is_directory_info(info)) {
-							if(is_html_bg(p)) {
-
-							} else {
-								folders += p;
-							}
-						} else {
-							var ext = get_file_extension(info.get_name());
-							if(accepted_images.contains(ext)) {
-								paths += JS.Value.string(ctx, new JS.String(p));
-							}
-						}
-					}
-				}
-			} catch(JSApiError e) {
-				critical("Error when parsing arguments value to Variant : %s", e.message);
-			} catch(Error e) {
-				critical("Error when enumerating directory content : %s", e.message);
-			}
-			return JS.Value.undefined(ctx);
-		}
 
 		public static unowned JS.Value dirlist(JS.Context ctx,
 		                                       JS.Object function,
