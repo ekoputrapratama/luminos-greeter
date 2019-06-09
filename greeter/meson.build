@@ -3,10 +3,6 @@
 greeter_c_options = [
   '-DWNCK_I_KNOW_THIS_IS_UNSTABLE',
   '-lm',
-  # '-DGETTEXT_PACKAGE=\"$(GETTEXT_PACKAGE)\"',
-  '-DLOCALEDIR=\""$(localedir)"\"',
-	# '-DVERSION=\"$(VERSION)\"',
-	'-DPKGDATADIR=\""$(pkgdatadir)"\"',
   '-include', 'config.h'
 ]
 
@@ -30,15 +26,12 @@ config_header = configure_file (
     configuration: conf_data
 )
 
-greeter_resources = gnome.compile_resources('webkitgtk-greeter-resources',
-  'webkitgtk-greeter.gresource.xml'
-)
-
 greeter_client_vala_sources = files(
   'widgets/Window.vala',
   'widgets/WebContainer.vala',
   'GreeterApplication.vala',
   'utils/ConfigReader.vala',
+  'utils/GioUtil.vala'
 )
 
 greeter_client_sources = [
@@ -60,6 +53,7 @@ greeter_client_dependencies = [
   glib,
   gobject,
   lightdm,
+  gio,
   posix,
 ]
 greeter_client_vala_options = greeter_vala_options
