@@ -5,6 +5,7 @@ class UtilsTest : TestCase {
 
 	public UtilsTest() {
 		base("UtilsTest");
+		add_test("valid_bgconf", valid_bgconf);
 		add_test("path_exists", path_exists);
 		add_test("get_file_extension", file_extension);
 		add_test("directory_validation", directory_validation);
@@ -40,6 +41,10 @@ class UtilsTest : TestCase {
 		File.new_for_path(conffile).delete();
 	}
 
+	public void valid_bgconf() throws GLib.Error {
+		assert_true(is_valid_bgconf(valid_conf));
+		assert_false(is_valid_bgconf(invalid_conf));
+	}
 
 	public void path_exists() throws GLib.Error {
 		var path = create_file("path_exists_test.txt", {
@@ -69,10 +74,19 @@ class UtilsTest : TestCase {
 	}
 
 	public override void set_up() {
+		valid_conf = create_file("conf-valid.bg", {
+			"[background]\n",
+			"Name=TestBG\n"
+		});
 
+		invalid_conf = create_file("conf-invalid.bg", {
+			"[theme]\n",
+			"Name=TestBG\n"
+		});;
 	}
 
 	public override void tear_down() {
-
+		delete_file(File.new_for_path(valid_conf));
+		delete_file(File.new_for_path(invalid_conf));
 	}
 }
