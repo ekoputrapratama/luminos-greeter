@@ -1,0 +1,9 @@
+<gresources>
+	<gresource prefix="/io/github/luminos-greeter">
+		<file compressed="true" preprocess="xml-stripblanks">window.ui</file>
+    <file compressed="true">moment-with-locales.min.js</file>
+    <file compressed="true">greeter_config.js</file>
+    <file compressed="true">greeter_util.js</file>
+    <file compressed="true">theme_utils.js</file>
+	</gresource>
+</gresources>

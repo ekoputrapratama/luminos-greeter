@@ -1,5 +1,0 @@
-<gresources>
-	<gresource prefix="/io/github/webkitgtk-greeter">
-		<file compressed="true" preprocess="xml-stripblanks">ui/window.ui</file>
-	</gresource>
-</gresources>
