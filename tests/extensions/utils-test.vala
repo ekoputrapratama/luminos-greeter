@@ -5,7 +5,6 @@ class UtilsTest : TestCase {
 
 	public UtilsTest() {
 		base("UtilsTest");
-		add_test("valid_bgconf", valid_bgconf);
 		add_test("path_exists", path_exists);
 		add_test("get_file_extension", file_extension);
 		add_test("directory_validation", directory_validation);
