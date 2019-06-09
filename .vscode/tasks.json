@@ -55,7 +55,7 @@
     {
       "label": "Run Test",
       "type": "shell",
-      "command": "meson test -C build",
+      "command": "meson test -C build --print-errorlogs",
       "problemMatcher": []
     },
     {
