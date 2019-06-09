@@ -57,6 +57,28 @@ namespace LuminosGreeter.Utility {
 		return conf;
 	}
 
+	public static bool is_valid_bgconf(string path) {
+		debug("is_valid_bgconf %s", path);
+		var file = File.new_for_path(path);
+		if(file.query_exists() && !is_directory(file)) {
+			var conf = load_config_file(path);
+			var bgconf = conf.get("background");
+			return bgconf != null;
+		}
+		return false;
+	}
+
+	public static bool is_html_bg(string path) {
+		var file = File.new_for_path(path);
+		if(file.query_exists() && is_directory(file)) {
+			var p = path + Path.DIR_SEPARATOR_S + "index.bg";
+			if(file_path_exists(p) && is_valid_bgconf(p)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static bool file_path_exists(string path) {
 		return FileUtils.test(path, FileTest.EXISTS);
 	}
