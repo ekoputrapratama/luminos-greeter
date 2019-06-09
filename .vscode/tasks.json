@@ -12,25 +12,25 @@
     {
       "label": "Configure debug",
       "type": "shell",
-      "command": "meson configure --buildtype=debug build",
+      "command": "meson configure --buildtype=debug  build",
       "problemMatcher": []
     },
     {
       "label": "Configure release",
       "type": "shell",
-      "command": "meson configure --buildtype=release build",
+      "command": "meson configure --buildtype=release --prefix=/usr build",
       "problemMatcher": []
     },
     {
       "label": "Setup debug",
       "type": "shell",
-      "command": "env CC=clang CXX=clang++ meson setup --buildtype=debug build",
+      "command": "env CC=clang CXX=clang++ meson setup --buildtype=debug --prefix=/usr build",
       "problemMatcher": []
     },
     {
       "label": "Setup release",
       "type": "shell",
-      "command": "meson setup --buildtype=release build",
+      "command": "meson setup --buildtype=release --prefix=/usr build",
       "problemMatcher": []
     },
     {
@@ -59,21 +59,27 @@
       "problemMatcher": []
     },
     {
+      "label": "Run Test with valgrind",
+      "type": "shell",
+      "command": "meson test -C build --wrap=valgrind --print-errorlogs",
+      "problemMatcher": []
+    },
+    {
       "label": "Run release",
       "type": "shell",
-      "command": "./build/greeter/webkitgtk-greeter",
+      "command": "./build/greeter/luminos-greeter",
       "problemMatcher": []
     },
     {
       "label": "Run in development mode",
       "type": "shell",
-      "command": "G_MESSAGES_DEBUG=all ./build/greeter/webkitgtk-greeter --dev --debug",
+      "command": "G_MESSAGES_DEBUG=all ./build/greeter/luminos-greeter --dev --debug",
       "problemMatcher": []
     },
     {
       "label": "Run with gdb",
       "type": "shell",
-      "command": "gdb --args ./build/greeter/webkitgtk-greeter --dev --debug",
+      "command": "gdb --args ./build/greeter/luminos-greeter --dev --debug",
       "problemMatcher": []
     }
   ]
