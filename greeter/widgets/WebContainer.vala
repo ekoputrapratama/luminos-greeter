@@ -1,55 +1,58 @@
-using Gee;
 using GLib;
 using WebKit;
 
-namespace WebkitGtkGreeter {
-
-	[DBus(name = "io.github.webkitgtk-greeter.JSApi")]
-	interface JSApi : Object {
-		public signal void on_string_callback();
-	}
+namespace LuminosGreeter {
 
 	public class WebContainer: WebView {
-		private JSApi messenger = null;
-		public File launchers_folder { get; private set; }
-		public File config_folder { get; construct; }
-		public WebContext context {get; set;}
-		public signal void on_string_callback();
+		private static List<UserScript>? scripts = null;
 
-		public WebContainer.with_context(WebContext ctx) {
-			GLib.Object(context: ctx);
-			this.init();
-		}
 		public WebContainer() {
+			load_resources();
+			UserContentManager content_manager = new UserContentManager();
+			foreach(UserScript script in scripts) {
+				content_manager.add_script(script);
+			}
+			Object(user_content_manager: content_manager);
 			this.init();
 		}
-		construct {
 
-		}
 		public void init() {
 
 			WebKit.Settings settings = this.get_settings();
-			settings.enable_plugins = true;
 			settings.enable_javascript = true;
 			settings.allow_file_access_from_file_urls = true;
 			settings.allow_universal_access_from_file_urls = true;
-			settings.enable_developer_extras = true;
-			settings.enable_webgl = true;
-			//  Bus.watch_name(BusType.SESSION, "io.github.webkit2gtk-greeter.JSApi", BusNameWatcherFlags.NONE,
-			//                 (connection, name, owner) => { on_extension_appeared(connection, name, owner); }, null);
-		}
-		private void on_extension_appeared(DBusConnection connection, string name, string owner) {
-			try {
-				messenger = connection.get_proxy_sync("io.github.webkit2gtk-greeter.JSApi", "/io/github/webkit2gtk-greeter/jsapi",
-				                                      DBusProxyFlags.NONE, null);
-				messenger.on_string_callback.connect(() => {
-					message("on_string_callback");
-					on_string_callback();
-				});
-			} catch(IOError error) {
-				warning("Problem connecting to extension: %s", error.message);
-			}
+			settings.enable_java = false;
+			settings.enable_media_stream = true;
+			settings.javascript_can_access_clipboard = true;
+
+			WebKit.WebContext context = get_context();
+			context.set_process_model(WebKit.ProcessModel.MULTIPLE_SECONDARY_PROCESSES);
+			context.set_tls_errors_policy(WebKit.TLSErrorsPolicy.IGNORE);
 		}
 
+		/** Loads an application-specific WebKit JavaScript script. */
+		public static UserScript load_app_script(string name)
+		throws Error {
+			return new UserScript(
+				GioUtil.read_resource(name),
+				UserContentInjectedFrames.TOP_FRAME,
+				UserScriptInjectionTime.START,
+				null,
+				null
+				);
+		}
+
+		public static void load_resources() {
+			scripts = new List<UserScript>();
+			try {
+				scripts.append(load_app_script("greeter_util.js"));
+				scripts.append(load_app_script("greeter_config.js"));
+				scripts.append(load_app_script("moment-with-locales.min.js"));
+				scripts.append(load_app_script("theme_utils.js"));
+			} catch(Error e) {
+				critical("failed when loading user scripts : %s", e.message);
+			}
+		}
 	}
 }
