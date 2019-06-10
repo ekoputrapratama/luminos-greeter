@@ -6,6 +6,7 @@ namespace LuminosGreeter {
 		bool do_show_version = false;
 		bool do_debug = false;
 		bool dev = false;
+		string? current_path = Posix.realpath(GLib.Environment.find_program_in_path(args[0]));
 
 		OptionEntry versionOption = { "version", 'v', 0, OptionArg.NONE, ref do_show_version,
 			                      /* Help string for command line --version flag */
@@ -37,6 +38,11 @@ namespace LuminosGreeter {
 		}
 		AppOptions opts = {false};
 		opts.debug = do_debug;
+		opts.current_path = current_path;
+
+		if(do_debug) {
+			Environment.set_variable("G_MESSAGE_DEBUG", "all", true);
+		}
 
 		Environment.set_variable("WEBKIT_DISABLE_COMPOSITING_MODE", "1", true);
 		GreeterApplication app = new GreeterApplication(opts);

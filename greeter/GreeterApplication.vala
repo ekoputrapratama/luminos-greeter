@@ -14,7 +14,7 @@ namespace LuminosGreeter {
 	public struct AppOptions {
 		public bool dev;
 		public bool debug;
-		string application_id;
+		string current_path;
 	}
 
 	public class GreeterApplication : Gtk.Application {
@@ -47,6 +47,11 @@ namespace LuminosGreeter {
 				return this.exec_dir.has_prefix(this.install_prefix);
 			}
 		}
+		internal bool is_debug_mode {
+			get {
+				return options.debug;
+			}
+		}
 		/** Returns the compile-time configured installation directory. */
 		internal GLib.File install_prefix {
 			get; private set; default = GLib.File.new_for_path(INSTALL_PREFIX);
@@ -67,7 +72,7 @@ namespace LuminosGreeter {
 			Object(application_id: APPLICATION_ID, flags: ApplicationFlags.FLAGS_NONE);
 			this.options = opts;
 			this.config_rdr = new ConfigReader(Constants.CONF_DIR + Path.DIR_SEPARATOR_S + "lightdm-webkit2-greeter.conf");
-
+			this.exec_dir = GLib.File.new_for_path(opts.current_path).get_parent();
 			_instance = this;
 		}
 
@@ -81,14 +86,14 @@ namespace LuminosGreeter {
 			string theme_name = greeter_setting.get("webkit_theme");
 			debug("using theme %s", theme_name);
 
-			var url = "file://" + Constants.THEMES_DIR + Path.DIR_SEPARATOR_S + "default/index.html";
+			var url = "file://" + Constants.THEMES_DIR + Path.DIR_SEPARATOR_S + "luminos/index.html";
 			debug("ensure theme exists %s", theme_name);
 			if(ensure_theme_exists(theme_name)) {
 				url = get_theme_url(theme_name);
 			}
 
 			//  if(!is_installed) {
-			//  	var destination = File.new_for_path("data/themes/default/index.html");
+			//  	var destination = File.new_for_path("data/themes/luminos/index.html");
 			//  	string path = "file://" + destination.get_path();
 			//  	debug("theme path: %s\n", path);
 			//  	url = path;
