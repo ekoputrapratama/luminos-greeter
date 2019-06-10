@@ -1,8 +1,8 @@
 cmd = run_command('sh', '-c', 'echo $HOME')
 HOME_DIR = cmd.stdout().strip()
 desktop_file = i18n.merge_file(
-  input: 'webkitgtk-greeter.desktop.in',
-  output: 'webkitgtk-greeter.desktop',
+  input: 'luminos-greeter.desktop.in',
+  output: 'luminos-greeter.desktop',
   type: 'desktop',
   po_dir: '../po',
   install: true,
@@ -19,8 +19,8 @@ if desktop_utils.found()
 endif
 
 appstream_file = i18n.merge_file(
-  input: 'webkitgtk-greeter.appdata.xml.in',
-  output: 'webkitgtk-greeter.appdata.xml',
+  input: 'luminos-greeter.appdata.xml.in',
+  output: 'luminos-greeter.appdata.xml',
   po_dir: '../po',
   install: true,
   install_dir: join_paths(get_option('datadir'), 'appdata')
@@ -34,7 +34,7 @@ if appstream_util.found()
   )
 endif
 
-install_data('io.github.webkitgtk-greeter.gschema.xml',
+install_data('io.github.luminos-greeter.gschema.xml',
   install_dir: join_paths(get_option('datadir'), 'glib-2.0/schemas')
 )
 
