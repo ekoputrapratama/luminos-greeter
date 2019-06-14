@@ -60,9 +60,10 @@ i {
 .dropdown-group >.dropdown-menu > li:hover {
   background: var(--secondary-color);
 }
+
 #bg {
   user-select: none;
-  pointer-events: none;
+  pointer-events: all;
   position: absolute;
   left: 0;
   top: 0;
