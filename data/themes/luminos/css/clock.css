@@ -1,0 +1,38 @@
+@charset "UTF-8";
+
+@font-face {
+  font-family:'Great Vibes';
+  src:url('vendor://fonts/GreatVibes-Regular.otf');
+}
+
+/* Styles for the layout template */
+:root {
+  --textcolor:black;
+  --accentcolor:#269;
+  --lightaccentcolor:#9df;
+  --reversecolor:white;
+}
+strong, b {font-weight:bold;}
+#wrapper {
+
+  margin:0 auto;padding:1.2rem;
+  width:100%;height:auto;
+  min-width:320px;max-width:960px;
+  background:var(--reversecolor);
+  color:var(--textcolor);
+  text-align:left;
+  position:relative;
+}
+#digitalclock {
+  text-align:center;
+  margin:40px auto 20px auto;
+  font-family: 'Roboto Mono', monaco, monospace;
+  font-size:4rem;
+  color:#FFF;
+  padding:0.75em;
+  background:#000;
+  width:10em;
+  border:4px solid silver;
+  border-radius:8px;
+  box-shadow:inset 0 0 0 0.5em #234;
+}

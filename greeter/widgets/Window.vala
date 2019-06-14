@@ -5,23 +5,21 @@ using GLib.Environment;
 using Cairo;
 
 
-namespace LuminosGreeter {
-	[GtkTemplate(ui = "/io/github/luminos-greeter/window.ui")]
-	public class Window : Gtk.ApplicationWindow {
-		public new GreeterApplication application {
-			get { return (GreeterApplication) base.get_application(); }
-			set { base.set_application(value); }
-		}
-		LuminosGreeter.WebContainer webview;
+namespace Luminos {
+	public class GreeterWindow : Gtk.Window {
+		Luminos.WebContainer webview;
 		bool enable_transparancy = false;
 
-		construct
-		{
+		construct {
+			accept_focus = true;
 			type_hint = Gdk.WindowTypeHint.DESKTOP;
+			skip_taskbar_hint = true;
+			skip_pager_hint = true;
+			decorated = false;
 		}
 
-		public Window(GreeterApplication app) {
-			Object(application: app);
+		public GreeterWindow() {
+			GreeterApplication app = GreeterApplication.instance;
 			string ext_path = app.get_extensions_dir().get_path();
 			debug("extensions directory: %s\n", ext_path);
 
@@ -32,23 +30,17 @@ namespace LuminosGreeter {
 			this.screen_changed.connect(on_window_screen_changed);
 
 
-			this.webview = new LuminosGreeter.WebContainer();
+			this.webview = new Luminos.WebContainer();
 			WebKit.Settings settings = this.webview.get_settings();
 			settings.enable_plugins = false;
-			settings.enable_developer_extras = app.is_installed;
+			settings.enable_developer_extras = app.is_debug_mode;
 			settings.enable_webgl = true;
 
+			/* we cannot use on_window_object_cleared in main process so we listen for load changed signal.  */
 			this.webview.load_changed.connect(load_changed);
 			add(this.webview);
 
-			var screen = this.get_screen();
-			this.focus_out_event.connect(on_window_focus_out);
-
 			show_all();
-		}
-
-		public void set_type_hint(Gdk.WindowTypeHint type) {
-			type_hint = type;
 		}
 
 		public void set_enable_transparancy() {
@@ -75,41 +67,25 @@ namespace LuminosGreeter {
 			this.webview.set_background_color(color);
 		}
 
-		private bool on_window_focus_out(Gdk.EventFocus e) {
-			debug("window focus out");
-			return true;
-		}
-
 		public void on_window_screen_changed(Gdk.Screen ? previous_screen) {
 			debug("window screen changed");
-			var screen = this.get_screen();
-			var visual = screen.get_rgba_visual();
-
-			if(visual == null) {
-				warning("Screen does not support alpha channels!");
-				visual = screen.get_system_visual();
-			}
-
-			this.set_visual(visual);
-		}
-
-		[GtkCallback]
-		public bool on_window_draw(Widget widget, Context ctx) {
-			return false;
+			this.set_enable_transparancy();
 		}
 
 		public void load_changed(LoadEvent event) {
 
 			switch(event) {
-			case LoadEvent.COMMITTED:
-				//  message("on load_changed");
-
-				break;
+			  case LoadEvent.COMMITTED:
+				  message("on LOAD_COMMITED");
+				  GreeterApplication app = GreeterApplication.instance;
+				  this.webview.run_javascript("window.THEMES_DIR = '" + app.get_themes_dir().get_path() + "';");
+				  this.webview.run_javascript("window.CURRENT_THEME = '" + app.current_theme + "';");
+				  this.webview.run_javascript("window.BACKGROUNDS_DIR = '" + app.get_backgrounds_dir().get_path() + "';");
+				  break;
 			}
 		}
 
 		public void load(string url, bool showInspector) {
-
 			if(showInspector) {
 				var inspector = this.webview.get_inspector();
 				inspector.show();

@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=LightDM WebkitGtk Greeter
+Name=Luminos Greeter
 Comment=LightDM Greeter
 Type=Application
-Exec=webkitgtk-greeter
+Exec=luminos-greeter

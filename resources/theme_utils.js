@@ -3,7 +3,7 @@ var time_language = null,
   manual_time_format;
 
 class ThemeUtils {
-  constructor() {}
+  constructor() { }
   /**
    * Returns the contents of directory found at `path` provided that the (normalized) `path`
    * meets at least one of the following conditions:

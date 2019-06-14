@@ -1,9 +1,11 @@
 
-namespace Constants {
+namespace Luminos.Constants {
     public const string CONF_DIR = @CONF_DIR@;
     public const string DATA_DIR = @DATA_DIR@;
     public const string THEMES_DIR = @THEMES_DIR@;
     public const string EXTENSIONS_DIR = @_EXTENSIONS_DIR@;
+    public const string BACKGROUNDS_DIR = @BACKGROUNDS_DIR@;
+    public const string VENDOR_DIR = @VENDOR_DIR@;
     public const string APPLICATION_ID = @APPLICATION_ID@;
     public const string GETTEXT_PACKAGE = @GETTEXT_PACKAGE@;
     public const string PROJECT_NAME = @PROJECT_NAME@;

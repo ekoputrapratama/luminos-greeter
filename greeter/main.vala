@@ -1,19 +1,20 @@
 
 using GLib;
-namespace LuminosGreeter {
 
-	static int main(string[] args) {
+namespace Luminos {
+	public static int main(string[] args) {
 		bool do_show_version = false;
 		bool do_debug = false;
 		bool dev = false;
+		string? current_path = Posix.realpath(GLib.Environment.find_program_in_path(args[0]));
 
 		OptionEntry versionOption = { "version", 'v', 0, OptionArg.NONE, ref do_show_version,
 			                      /* Help string for command line --version flag */
-			                      N_("Show release version"), null };
+			                      _("Show release version"), null };
 		OptionEntry debugOption = { "debug", 'd', 0, OptionArg.NONE, ref do_debug,
-			                    N_("Enable debugging features"), null };
+			                    _("Enable debugging features"), null };
 		OptionEntry devOption = { "dev", 'c', 0, OptionArg.NONE, ref dev,
-			                  N_("Running in development mode"), null };
+			                  _("Running in development mode"), null };
 		OptionEntry[] options = { versionOption, debugOption, devOption };
 
 		debug("Loading command line options");
@@ -37,8 +38,12 @@ namespace LuminosGreeter {
 		}
 		AppOptions opts = {false};
 		opts.debug = do_debug;
+		opts.current_path = current_path;
 
-		Environment.set_variable("WEBKIT_DISABLE_COMPOSITING_MODE", "1", true);
+		if(do_debug) {
+			Environment.set_variable("G_MESSAGE_DEBUG", "all", true);
+		}
+
 		GreeterApplication app = new GreeterApplication(opts);
 		return app.run(args);
 	}

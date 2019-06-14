@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-	<id>webkitgtk-greeter.desktop</id>
-  <url type="homepage">https://webkitgtk-greeter.web.app</url>
+	<id>luminos-greeter.desktop</id>
+  <url type="homepage">https://luminos-greeter.web.app</url>
 	<licence>CC0</licence>
-  <name>WebkitGtk Greeter</name>
+  <name>Luminos Greeter</name>
 	<description></description>
   <summary>LightDM Webkit2gtk</summary>
   <keywords>
@@ -13,7 +13,7 @@
     <keyword>start</keyword>
   </keywords>
   <provides>
-    <binary>webkitgtk-greeter</binary>
+    <binary>luminos-greeter</binary>
   </provides>
   <translation></translation>
   <update_contact></update_contact>

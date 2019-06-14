@@ -1,15 +1,14 @@
 cmd = run_command('sh', '-c', 'echo $HOME')
-HOME_DIR = cmd.stdout().strip()
+home_dir = cmd.stdout().strip()
+
 desktop_file = i18n.merge_file(
-  input: 'webkitgtk-greeter.desktop.in',
-  output: 'webkitgtk-greeter.desktop',
+  input: 'luminos-greeter.desktop.in',
+  output: 'luminos-greeter.desktop',
   type: 'desktop',
   po_dir: '../po',
   install: true,
   install_dir: '/usr/share/xgreeters'
 )
-
-
 
 desktop_utils = find_program('desktop-file-validate', required: false)
 if desktop_utils.found()
@@ -19,13 +18,12 @@ if desktop_utils.found()
 endif
 
 appstream_file = i18n.merge_file(
-  input: 'webkitgtk-greeter.appdata.xml.in',
-  output: 'webkitgtk-greeter.appdata.xml',
+  input: 'luminos-greeter.appdata.xml.in',
+  output: 'luminos-greeter.appdata.xml',
   po_dir: '../po',
   install: true,
   install_dir: join_paths(get_option('datadir'), 'appdata')
 )
-
 
 appstream_util = find_program('appstream-util', required: false)
 if appstream_util.found()
@@ -34,12 +32,13 @@ if appstream_util.found()
   )
 endif
 
-install_data('io.github.webkitgtk-greeter.gschema.xml',
-  install_dir: join_paths(get_option('datadir'), 'glib-2.0/schemas')
+install_data('io.github.luminos-greeter.gschema.xml',
+  install_dir: join_paths(get_option('datadir'), 'glib-2.0', 'schemas')
 )
 
-install_subdir('_vendor', install_dir : '/usr/share/lightdm-webkit')
-install_subdir('themes', install_dir : '/usr/share/lightdm-webkit')
+install_subdir('_vendor', install_dir : datadir)
+install_subdir('themes', install_dir : datadir)
+install_subdir('backgrounds', install_dir : datadir)
 
 compile_schemas = find_program('glib-compile-schemas', required: false)
 if compile_schemas.found()
