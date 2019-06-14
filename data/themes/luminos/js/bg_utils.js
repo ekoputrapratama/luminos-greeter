@@ -147,11 +147,14 @@ export function setBackground(url, style = {}, cb = null) {
         const doc = parser.parseFromString(response, "text/html");
         const str = `
         <html>
-          <head>${doc.head.innerHTML}</head>
+          <head>
+            <script src="themes://luminos/js/cache.js"></script>
+            <script src="vendor://js/mime.min.js"></script>
+            <script src="themes://luminos/js/background.js"></script>
+            ${doc.head.innerHTML}
+          </head>
           <body>
             ${doc.body.innerHTML}
-            <script src="themes://luminos/js/background.js"></script>
-            <script src="themes://luminos/js/cache.js"></script>
           </body>
         </html>`;
         iframe.src = "data:text/html;charset=utf-8," + escape(str);
