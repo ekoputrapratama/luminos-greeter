@@ -397,4 +397,36 @@ lightdm.onAuthenticationComplete = function () {
   }
 }
 
+/**
+ *
+ *
+ * @param {String} url
+ * @returns {String}
+ */
+function getExtension(url) {
+  const regex = /\.([0-9a-zA-Z]+)$/;
+  const res = url.match(regex);
+  return (res && res.length > 1) ? res[1] : null;
+}
+function arrayBufferToBase64(buffer) {
+  var binary = '';
+  var bytes = [].slice.call(new Uint8Array(buffer));
 
+  bytes.forEach((b) => binary += String.fromCharCode(b));
+
+  return window.btoa(binary);
+};
+window.addEventListener('message', ({ data }) => {
+  const isFetch = data.fetch;
+  if (isFetch) {
+    fetch(data.url).then(async res => {
+      const response = await res.arrayBuffer();
+      const ext = getExtension(data.url);
+      const mimeType = mime.getType(ext);
+      var base64String = `data:${mimeType};base64,${arrayBufferToBase64(response)}`;
+      $('#bg')[0].contentWindow.postMessage({ fetch: true, data: base64String }, '*');
+    }).catch(err => {
+      $('#bg')[0].contentWindow.postMessage({ fetch: true, error: { message: err.message } }, '*');
+    })
+  }
+})
