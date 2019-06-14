@@ -1,6 +1,6 @@
 //  using Gio;
 
-namespace LuminosGreeter.Utility {
+namespace Luminos.Utility {
 	public static Gee.Map<string, Gee.TreeMap<string, string> > load_config_file(string conffile) {
 
 		// A reference to our file

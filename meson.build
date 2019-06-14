@@ -17,13 +17,12 @@ application_id = 'io.github.luminos-greeter'
 config_h_dir = include_directories('.')
 greeter_prefix = get_option('prefix')
 libdir = join_paths(greeter_prefix, get_option('libdir'))
-extensions_dir = join_paths(libdir, 'luminos-greeter', 'extensions')
-datadir = join_paths('/usr', get_option('datadir'), 'lightdm-webkit')
+extensions_dir = join_paths(libdir, 'luminos', 'extensions')
+datadir = join_paths(greeter_prefix, get_option('datadir'), 'luminos')
 
 target_gtk = '3.24.7'
 target_glib = '2.2.5'
 target_webkit = '2.20'
-
 
 # Primary deps
 glib = dependency('glib-2.0', version: '>=' + target_glib)
@@ -54,6 +53,7 @@ conf_data.set_quoted('PROJECT_NAME', meson.project_name())
 conf_data.set_quoted('DATA_DIR', datadir)
 conf_data.set_quoted('THEMES_DIR', join_paths(datadir, 'themes'))
 conf_data.set_quoted('BACKGROUNDS_DIR', join_paths(datadir, 'backgrounds'))
+conf_data.set_quoted('VENDOR_DIR', join_paths(datadir, '_vendor'))
 conf_data.set_quoted('_EXTENSIONS_DIR', extensions_dir)
 conf_data.set_quoted('_INSTALL_PREFIX', greeter_prefix)
 conf_data.set_quoted('_BUILD_ROOT_DIR', meson.build_root())

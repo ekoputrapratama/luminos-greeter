@@ -2,13 +2,13 @@ using WebKit;
 using JS;
 using GLib;
 using Gtk;
-using LuminosGreeter.JSUtils;
-using LuminosGreeter.Utility;
+using Luminos.JSUtils;
+using Luminos.Utility;
 
 [CCode(cname = "G_MODULE_EXPORT webkit_web_extension_initialize", instance_pos = -1)]
 public void webkit_web_extension_initialize(WebKit.WebExtension extension) {
 	message("config-manager extension initialization");
-	LuminosGreeter.ClientConfigManager instance = new LuminosGreeter.ClientConfigManager();
+	Luminos.ClientConfigManager instance = new Luminos.ClientConfigManager();
 
 	extension.page_created.connect(instance.on_page_created);
 	var scriptWorld = WebKit.ScriptWorld.get_default();
@@ -18,7 +18,7 @@ public void webkit_web_extension_initialize(WebKit.WebExtension extension) {
 	instance.ref();
 }
 
-namespace LuminosGreeter {
+namespace Luminos {
 
 	class ClientConfigManager : GLib.Object {
 		private WebKit.WebPage page;

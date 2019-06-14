@@ -22,9 +22,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using JS;
-using LuminosGreeter.Utility;
+using Luminos.Utility;
 
-namespace LuminosGreeter.JSUtils {
+namespace Luminos.JSUtils {
 /**
  * Converts JavaScriptCore string to Vala UTF-8 string
  *
@@ -372,6 +372,9 @@ namespace LuminosGreeter.JSUtils {
 	}
 	public static bool is_null_or_undefined(JS.Context ctx, JS.Value value) {
 		return value.is_null(ctx) || value.is_undefined(ctx);
+	}
+	public static bool is_defined(JS.Context ctx, JS.Value value) {
+		return !value.is_null(ctx) && !value.is_undefined(ctx);
 	}
 
 	public unowned JS.Object remove_property(JS.Context ctx, JS.Object obj, string key) {

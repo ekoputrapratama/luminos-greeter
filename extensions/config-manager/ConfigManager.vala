@@ -1,9 +1,9 @@
 using Gee;
 using JS;
-using LuminosGreeter.JSUtils;
-using LuminosGreeter.Utility;
+using Luminos.JSUtils;
+using Luminos.Utility;
 
-namespace LuminosGreeter {
+namespace Luminos {
 
 	public class ConfigManager {
 

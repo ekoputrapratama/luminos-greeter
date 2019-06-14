@@ -17,6 +17,11 @@
       "image": "img/wallpapers/nathan-anderson-268995.jpg"
     }
   ],
+  "pallete": {
+    "primary": "rgba(51,51,51,1)",
+    "secondary": "#4285f4",
+    "accent": "#fff"
+  },
   "styles": {
     "panel": {
       "position": "absolute",
@@ -52,6 +57,10 @@
     "actionButton:hover": {
       "color": "#FFF",
       "background": "#4285f4"
+    },
+    "input": {
+      "color": "#FFF",
+      "caretColor": "#FFF"
     },
     "inputLine": {
       "background": "#FFF"

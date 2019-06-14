@@ -30,6 +30,7 @@ utils_dep = declare_dependency(
 #Core extension
 core_sources = [
   'core/main.vala',
+  'core/lightdm.vala',
   config_header
 ]
 

@@ -53,8 +53,6 @@ if (typeof config === "undefined") window.config = new GreeterConfig();
  */
 class ThemeConfig {
   constructor() {
-    const themeName = greeter_config.greeter.webkit_theme;
-
     this.configMgr = new ConfigManager();
     // this.config = this.configMgr.read(
     //   THEMES_DIR + "/" + themeName + "/" + "config.json"
@@ -66,9 +64,9 @@ class ThemeConfig {
    * @arg {String} key
    * @returns {Object} Theme config value.
    */
-  read(name) {
+  read(name = "theme.config.json") {
     this.config = this.configMgr.read(
-      THEMES_DIR + "/" + themeName + "/" + name
+      THEMES_DIR + DIR_SEPARATOR + CURRENT_THEME + DIR_SEPARATOR + name
     );
     return this.config;
   }

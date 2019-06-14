@@ -1,39 +1,206 @@
+
 body,
 html {
   display: block;
   min-height: 100%;
   font-family: roboto, arial, sans-serif;
   overflow: hidden;
+  background: #000;
 }
-[hidden] {
+
+[hidden], .hidden {
   display: none !important;
 }
+
+i {
+  font-size: 17px;
+  color:var(--accent-color);
+}
+
+.dropdown-group {
+  background: var(--primary-color);
+  color: var(--accent-color);
+}
+.dropdown-group > .selected {
+  text-align: left;
+}
+.dropdown-group > button {
+  outline: none !important;
+  color: var(--accent-color);
+}
+.dropdown-group > .dropdown-toggle {
+  max-width: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding:0;
+}
+.dropdown-group > button:hover,
+.dropdown-group:hover > button,
+.dropdown-group >.dropdown-menu > li,
+.dropdown-group >.dropdown-menu > li > a,
+.dropdown-group >.dropdown-menu > li > a:hover{
+  color: var(--accent-color);
+  text-decoration: none;
+}
+.dropdown-group >.dropdown-menu {
+  left: -154px !important;
+  background: var(--primary-color);
+  padding:0;
+  width:185px;
+}
+.dropdown-group >.dropdown-menu > li,
+.dropdown-group >.dropdown-menu > li > a {
+  color: var(--accent-color);
+}
+.dropdown-group >.dropdown-menu > li > a{
+  display: block;
+  padding: 10px 5px;
+}
+.dropdown-group >.dropdown-menu > li:hover {
+  background: var(--secondary-color);
+}
 #bg {
+  user-select: none;
+  pointer-events: none;
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
+  overflow: hidden;
+  z-index: 1;
   border: none;
+  width:100vw;
+  height:100vh;
 }
+
+h3,
+.panel-heading {
+  font-family: "Lato", "Open Sans", sans-serif;
+  font-size: 16px;
+  text-align: center;
+  font-weight: 400;
+}
+
+#clock-wrapper {
+  visibility: hidden;
+  position: absolute;
+  margin:0 auto;
+  padding:1.2rem;
+  width:100%;
+  height:300px;
+  width:300px;
+  text-align:left;
+  z-index: 2;
+}
+
 #container {
   display: block;
   z-index: 3;
   overflow: hidden;
 }
-#bg-switch-toggle {
-  z-index: 2;
+/* Background Switcher */
+
+.bg-switch {
+  position: relative;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 250px;
+  margin: 40px auto auto;
+  color: #f5f5f5;
 }
+
+.bg-switch .bgs a {
+  display: flex;
+  justify-content: center;
+}
+
+.bg-switch .bgs .bg {
+  text-align: center;
+  text-decoration: none;
+}
+
+.bg-switch .bgs .bg.active img {
+  border-color: #3d73c5;
+}
+
+.bg-switch .bgs .bg img {
+  width: 145px;
+  height: 95px;
+  border: 2px solid #ffffff;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+#bg-switch-wrapper {
+  margin-right: -250px;
+  right: 0;
+  width: 250px;
+  background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  height: 100%;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: all 0.4s ease 0s;
+}
+
+.bg-switch-container {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  top: 0;
+  width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#bg-switch-toggle {
+  top: 20px;
+  right: 0;
+  position: fixed;
+  z-index: 2;
+  margin: 5px 20px 0 0;
+}
+
+#bg-switch-wrapper.active {
+  right: 250px;
+  width: 250px;
+  transition: all 0.4s ease 0s;
+  overflow-x: hidden;
+}
+
+/* #bg-switch-toggle, #bg-switch-close {
+  margin-top:30px;
+} */
+
 #bg-switch-close {
+  margin: 20px 20px 0 0;
   pointer-events: all;
   cursor: pointer;
 }
+
 .switch-container {
   pointer-events: none;
 }
 .bgs {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.background {
+  width: 145px;
+  height: 95px;
+  margin-bottom: 10px;
+}
+.background > img {
+  width: 100%;
+  height: 100%;
 }
 #container .content {
   position: relative;
@@ -108,7 +275,10 @@ html {
 #container .content .current-user-login .content-footer .other-account p {
   padding: 16px 0;
 }
-#container .content .current-user-login .selected-user > .item,
+#container .content .current-user-login .selected-user > .item{
+  display: block;
+  position: relative;
+}
 #container .content .current-user-login .content-footer > .other-account {
   display: block;
   position: relative;
@@ -211,6 +381,7 @@ html {
   margin: 0;
 }
 #panel {
+  z-index: 9999;
   display: flex;
   flex-direction: column;
 }
@@ -224,6 +395,8 @@ html {
   right: 0;
   top: 0;
   z-index: 1;
+  will-change: opacity;
+  transition: background opacity 0.4s ease-in;
 }
 .bg svg {
   display: block;
@@ -285,15 +458,18 @@ html {
   top: 10px;
   border: none;
   background: transparent;
+  caret-color: var(--input-caret-color);
+  color:var(--input-color);
 }
 
 .input input,
 .input label,
 .button button {
   font-family: "Roboto", sans-serif;
-  font-size: 24px;
+  font-size: 18px;
   /* color: rgba(0, 0, 0, 0.8); */
   font-weight: 300;
+
 }
 
 .input:before,
@@ -325,12 +501,14 @@ html {
   top: 10px;
   left: 0;
   z-index: 2;
-  cursor: pointer;
+  cursor: text;
   line-height: 60px;
+  font-weight: 500;
 }
-
-.actionButton,
 .other-account {
+  color: var(--action-button-color);
+}
+.actionButton {
   color: var(--action-button-color);
   background: var(--action-button-background);
 }
@@ -343,7 +521,7 @@ html {
   box-sizing: border-box;
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 0.4fr;
+  grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr;
   z-index: 3;
   padding-top: 48px;
@@ -386,6 +564,15 @@ html[dir="rtl"] #signin-banner-container2 {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
+}
+.password-message {
+  margin-top:10px;
+  color: red;
+  display: block;
+  position: relative;
+  padding-left: 40px;
+  padding-right: 40px;
+  transition: opacity 0.4s ease-in-out;
 }
 .morpher {
   box-sizing: border-box;
@@ -478,7 +665,45 @@ html[dir="rtl"] #signin-banner-container2 {
   -webkit-animation: none;
   animation: none;
 }
-
+#console-toggle {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  color:#fff;
+  z-index: 3;
+  padding:0;
+}
+#console-toggle i {
+  color:#fff;
+  background: var(--primary-color);
+  padding:5px 10px;
+  border-radius: 4px;
+}
+#logArea {
+  position: absolute;
+  top: 25%;
+  left: 5%;
+  width: 25%;
+  height: 50%;
+  /* display: none; */
+  opacity: 0;
+  overflow: auto;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 10px;
+  font-size: 15px;
+  padding: 20px;
+  z-index: 3;
+}
+#logArea.show {
+  opacity: 1;
+}
+@media (max-width: 1900px) {
+  #logArea {
+    top: 24%;
+    left: 2%;
+  }
+}
 @-webkit-keyframes rotate {
   to {
     -webkit-transform: rotate(360deg);
