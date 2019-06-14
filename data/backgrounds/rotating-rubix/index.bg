@@ -3,3 +3,4 @@ name=Rotating Rubix
 description=Webgl Rotating Rubix
 url=index.html
 webgl=true
+thumbnail=thumb.gif
