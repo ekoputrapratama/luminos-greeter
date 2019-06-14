@@ -29,12 +29,12 @@
 
 @font-face {
   font-family: Lato;
-  src: url("../fonts/Lato-Regular.ttf");
+  src: url("vendor://fonts/Lato-Regular.ttf");
 }
 
 @font-face {
   font-family: LatoLight;
-  src: url("../fonts/Lato-Light.ttf");
+  src: url("vendor://fonts/Lato-Light.ttf");
 }
 
 *:focus {
