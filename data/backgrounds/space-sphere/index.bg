@@ -1,0 +1,6 @@
+[background]
+name=Space Sphere
+description=Space in WebGL
+url=index.html
+webgl=true
+thumbnail=thumb.gif
