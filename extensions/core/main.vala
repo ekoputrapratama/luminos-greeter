@@ -39,15 +39,21 @@ namespace Luminos {
 		} else if(bg.get("thumbnail") != null) {
 			image = bg.get("thumbnail");
 		}
+
+		bool is_absolute;
 		if(image != null) {
+			is_absolute = Path.is_absolute(image);
+			if(!is_absolute) {
+				image = "backgrounds://" + bgname + Path.DIR_SEPARATOR_S + image;
+			}
 			obj.set_property(ctx,
 			                 new JS.String.with_utf8_c_string("image"),
-			                 JS.Value.boolean(ctx, bool.parse(bg.get("webgl"))),
+			                 to_js_string(ctx, image),
 			                 JS.PropertyAttribute.None);
 		}
 
 		var url = bg.get("url");
-		bool is_absolute = Path.is_absolute(url);
+		is_absolute = Path.is_absolute(url);
 
 		if(!is_absolute) {
 			url = "backgrounds://" + bgname + Path.DIR_SEPARATOR_S + url;
@@ -268,8 +274,11 @@ namespace Luminos {
 	public void on_page_created(WebKit.WebExtension extension, WebKit.WebPage page) {
 		debug("page-created");
 		page.console_message_sent.connect(on_console_message);
+		page.send_request.connect(send_request);
 	}
-
+	public bool send_request(WebKit.URIRequest request, WebKit.URIResponse redirected_response) {
+		return true;
+	}
 	private void on_console_message(WebKit.WebPage page,
 	                                WebKit.ConsoleMessage message) {
 		string source = message.get_source_id();
